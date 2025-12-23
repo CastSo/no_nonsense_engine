@@ -1,8 +1,7 @@
+#pragma once
 #include "config.h"
 
-#ifndef TYPE_H
 
-#define TYPE_H
 
 typedef struct vector3f {
     float x, y, z;
@@ -22,14 +21,9 @@ inline vector4f as_point(const vector3f *v) {
     return point;
 };
 
-vector4f subtract_vec4f(const vector4f *v0, const vector4f *v1) {
-    vector4f v0Subtractv1 = {v0->x - v1->x, v0->y - v1->y, v0->z - v1->z, v0->w - v1->w};
-    return v0Subtractv1;
-};
+vector4f subtract_vec4f(const vector4f *v0, const vector4f *v1);
 
-float determinant(const vector4f *v0, const vector4f *v1) {
-    return v0->x * v1->y - v0->y * v1->x;
-};
+float determinant(const vector4f *v0, const vector4f *v1);
 
 typedef struct color4ub {
     uint8_t r, g, b, a;
@@ -57,4 +51,3 @@ typedef struct draw_command {
 } draw_command;
 
 
-#endif

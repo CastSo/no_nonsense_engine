@@ -1,12 +1,6 @@
+#pragma once
 #include "config.h"
-
 #include "type.h"
-
-#ifndef IMAGE_VIEW_H
-
-#define IMAGE_VIEW_H
-
-
 
 typedef struct image_view image_view, *pno;
 struct image_view {
@@ -19,8 +13,4 @@ struct image_view {
     
 };
 
-color4ub *image_view_at(image_view *self, uint32_t x, uint32_t y) {
-    return &self->pixels[x + y * self->width];
-}
-
-#endif
+color4ub *image_view_at(image_view *self, uint32_t x, uint32_t y);

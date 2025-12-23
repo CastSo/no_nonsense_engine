@@ -3,8 +3,8 @@
 #include "render.h"
 
 int main(int argc, char** argv) {
-    int SCR_WIDTH = 800;
-    int SCR_HEIGHT = 800;
+    int SCR_WIDTH = 1920;
+    int SCR_HEIGHT = 1080;
 
     int mouse_x = 0;
 	int mouse_y = 0;
@@ -19,12 +19,12 @@ int main(int argc, char** argv) {
 
 
 
-    SDL_Window* window = SDL_CreateWindow("Weird Doom",
+    SDL_Window* window = SDL_CreateWindow("Tiny Renderer",
                                         SCR_WIDTH, SCR_HEIGHT,
                                         0);
 
     bool run = true;
-    Model *model = read_model_lines("src/models/diablo3_pose.obj");
+    Model *model = read_model_lines("src/models/african_head.obj");
 
 
     while (run) {

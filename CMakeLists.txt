@@ -36,9 +36,9 @@ endif()
 add_executable(tiny_renderer WIN32 
     ./src/main.c
     ./src/config.h
-    ./src/type.h
-    ./src/image_view.h
-    ./src/render.h
+    ./src/type.c
+    ./src/image_view.c
+    ./src/render.c
     ./src/util/util.c
     ./src/component.h)
 
