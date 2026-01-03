@@ -156,7 +156,7 @@ void render_faces(Model* model, image_view* color_buffer, vector4f* rand_colors)
 
 
         vector4f color = rand_colors[i/3];
-        triangle(ax, ay, bx, by, cx, cy, color_buffer, &color);
+        //triangle(ax, ay, bx, by, cx, cy, color_buffer, &color);
     }
     //free(color_buffer);
 }
@@ -272,29 +272,31 @@ void triangle_scanline(int ax, int ay, int bx, int by, int cx, int cy, image_vie
 }
 
 double signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy) {
-    return .5 * ((by-ay) * (bx+ax) + (cy-by) * (cx+bx) + (ay-cy)*(ax+cx));
+    return .5*((by-ay)*(bx+ax) + (cy-by)*(cx+bx) + (ay-cy)*(ax+cx));
 }
 
 //Uses bounding box rasterization
-void triangle(int ax, int ay, int bx, int by, int cx, int cy, image_view *color_buffer, vector4f *color) {
+void triangle(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy, int cz, image_view *color_buffer) {
     int bbminx = fmin(fmin(ax, bx), cx);
     int bbminy = fmin(fmin(ay, by), cy);
     int bbmaxx = fmax(fmax(ax, bx), cx);
     int bbmaxy = fmax(fmax(ay, by), cy);
     double total_area = signed_triangle_area(ax, ay, bx, by, cx, cy);
     if (total_area<1) return;
-    //printf("%f \n", total_area);
-
     
     for (int x = bbminx; x <= bbmaxx; x++) {
         for (int y = bbminy; y <= bbmaxy; y++) {
             double alpha = signed_triangle_area(x, y, bx, by, cx, cy) / total_area;
             double beta  = signed_triangle_area(x, y, cx, cy, ax, ay) / total_area;
             double gamma = signed_triangle_area(x, y, ax, ay, bx, by) / total_area;
-            if (alpha<0 || beta<0 || gamma<0) 
+            if (alpha<0.0f || beta<0.0f || gamma<0.0f) 
                 continue; 
 
-            *color_buffer->at(color_buffer, x, y) = to_color4ub(color);
+            if (alpha<0.1f || beta<0.1f || gamma<0.1f) 
+            {    
+                color4ub z = (color4ub) {(alpha * az), (beta * bz), (gamma * cz), 0.0f};
+                *color_buffer->at(color_buffer, x, y) = z;
+            }
         }
     }
 

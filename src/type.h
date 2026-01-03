@@ -31,7 +31,7 @@ typedef struct color4ub {
 
 static inline color4ub to_color4ub(const vector4f *c) {
     color4ub result;
-    //Color channel ranges from 0.0f = 1.0f;
+    //Color channel ranges from 0.0f to 1.0f;
     result.r = fmax(0.f, fmin(255.f, c->x * 255.f));
     result.g = fmax(0.f, fmin(255.f, c->y * 255.f));
     result.b = fmax(0.f, fmin(255.f, c->z * 255.f));
