@@ -9,4 +9,3 @@ float dot_vec4f(vector4f a, vector4f b);
 
 vector3f multiply_mat3f_vec3f(matrix3f m, vector3f v);
 
-vector3f rotation(vector3f v);

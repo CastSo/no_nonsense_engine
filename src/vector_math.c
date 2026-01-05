@@ -21,10 +21,3 @@ vector3f multiply_mat3f_vec3f(matrix3f m, vector3f v) {
             };
 }
 
-vector3f rotation(vector3f v) {
-    double a = M_PI/6;
-    matrix3f mat = (matrix3f){cos(a), 0, sin(a),
-                                0,  1,  0,
-                              -sin(a), 0, cos(a)};
-    return (vector3f)multiply_mat3f_vec3f(mat, v);
-}

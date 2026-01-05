@@ -59,24 +59,23 @@ struct Model* read_model_lines(char *file_name) {
         exit(1);
     }
 
-    Model *model = (Model *)malloc(sizeof(Model));
+    Model *model = malloc(sizeof(Model));
 
     int vertices_size;
-    model->vertices = (vector3f *)malloc(1000000 * sizeof(vector3f));
+    model->vertices = malloc(1000000 * sizeof(vector3f));
     int triangles_size;
-    model->triangles = (int*)malloc(1000000 * sizeof(int));
+    model->triangles = malloc(1000000 * sizeof(int));
 
     char *buffer;
     size_t buffer_size = 256;
     size_t characters;
 
     char *line = NULL;
-    char *prev_line;
     const char *delim = " ";
     int line_count = 0;
     bool vertices_end = false;
 
-    buffer = (char *)malloc(buffer_size * sizeof(char));
+    buffer = malloc(buffer_size * sizeof(char));
 
     int vert_i = 0;
     int face_i = 0;
@@ -86,6 +85,7 @@ struct Model* read_model_lines(char *file_name) {
     int width_scale = 800;
     int height_scale = 800;
     int yoffset = 200;
+    
     //Checks only vertices
     while (getline(&buffer, &buffer_size, fptr) != -1) 
     {
@@ -121,29 +121,31 @@ struct Model* read_model_lines(char *file_name) {
             char *saveptr2;
             
             //Only checks the first index of each word
-            while (prev_line != NULL) {      
+            while (line != NULL) {      
                 //Skips char f
-                char *current_vert = strtok_r(prev_line, "/", &saveptr2);
+                char *current_vert = strtok_r(line, "", &saveptr2);
 
                 if(atoi(current_vert) != 0) {
                     model->triangles[face_i] = atoi(current_vert);
-                    //printf("%d\n",  model->triangles[face_i]);
+                    // printf("%d\n",  model->triangles[face_i]);
                     face_i++;
                 }
                 
+                line = strtok_r(NULL, delim, &saveptr1);
 
-                prev_line = strtok_r(NULL, " ", &saveptr1);
             }
 
         } 
         
-        prev_line = strtok_r(buffer, delim, &saveptr1);
+        
+        //printf("end line");
 
 
     }
 
     fclose(fptr);
     free(buffer);
+    
     model->vertices_size = vert_i;
     model->triangles_size = face_i;
 
@@ -151,18 +153,26 @@ struct Model* read_model_lines(char *file_name) {
 }
 
 void render_faces(Model* model, image_view* color_buffer) {
-    int width_scale = 600;
-    int height_scale = 600;
-    int xoffset = 200;
-    int yoffset = 200;
+    int width_scale = 800;
+    int height_scale = 800;
+    int xoffset = 400;
+    int yoffset = 100;
+    double angle = M_PI/6;
     for (int i = 0; i < (model->triangles_size); i += 3) {
-        vector3f a_rot = rotation((vector3f){model->vertices[model->triangles[i]-1].x, model->vertices[model->triangles[i]-1].y, model->vertices[model->triangles[i]-1].z});
-        vector3f b_rot = rotation((vector3f){model->vertices[model->triangles[i+1]-1].x, model->vertices[model->triangles[i+1]-1].y, model->vertices[model->triangles[i+1]-1].z});
-        vector3f c_rot = rotation((vector3f){model->vertices[model->triangles[i+2]-1].x, model->vertices[model->triangles[i+2]-1].y, model->vertices[model->triangles[i+2]-1].z});
+        vector3f a = model->vertices[model->triangles[i]-1];
+        vector3f b = model->vertices[model->triangles[i+1]-1];
+        vector3f c = model->vertices[model->triangles[i+2]-1];
 
-        vector3f a = (vector3f) project(perspective(a_rot), width_scale, height_scale);
-        vector3f b = (vector3f) project(perspective(b_rot), width_scale, height_scale);
-        vector3f c = (vector3f) project(perspective(c_rot), width_scale, height_scale);
+        rotation(&a, angle);
+        rotation(&b, angle);
+        rotation(&c, angle);
+        perspective(&a);
+        perspective(&b);
+        perspective(&c);
+
+        project(&a, width_scale, height_scale);
+        project(&b, width_scale, height_scale);
+        project(&c, width_scale, height_scale);
 
         // vector4f color = rand_colors[i/3];
         triangle(xoffset + a.x, yoffset + a.y, a.z, xoffset + b.x, yoffset + b.y, b.z, xoffset + c.x, yoffset + c.y, c.z, color_buffer);
@@ -317,14 +327,3 @@ void triangle(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy, in
 
 }
 
-vector3f project(vector3f vec, int width, int height) {
-    return (vector3f) { (vec.x + 1.f) * width/2,
-                        (1.f - vec.y ) * height/2,
-                        (vec.z + 1.f) * 255/2
-                        };
-}
-
-vector3f perspective(vector3f v) {
-    double c = 12.;
-    return (vector3f){v.x/(1-v.z/c), v.y/(1-v.z/c), v.z/(1-v.z/c)};
-}
