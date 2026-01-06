@@ -8,43 +8,6 @@ void clear(const image_view *color_buffer, const vector4f *color) {
     fill_n(ptr, &fill, size, sizeof(fill));
 }
 
-void line(int ax, int ay, int bx, int by, image_view *color_buffer, vector4f *color) {
-    bool steep = fabsf(ax-bx) < fabsf(ay-by);
-    //If steep (more vertical than horizontal) transpose the image to make line more horizontal
-    if (steep) {
-        swap_int(&ax, &ay);
-        swap_int(&bx, &by);
-    }
-
-    //Make it left-to-right
-    if (ax > bx) {
-        swap_int(&ax, &bx);
-        swap_int(&ay, &by);
-    }
-
-    int y = ay;
-    int ierror = 0;
-
-    for (int x=ax; x <= bx; x++) {
-        //printf("%d, %d", x, y);
-
-        if(steep) //de-transpose if steep
-        {    
-
-            *color_buffer->at(color_buffer, y, x) = to_color4ub(color);
-        } else { 
-
-            *color_buffer->at(color_buffer, x, y) = to_color4ub(color);
-        }
-        ierror += 2 * fabsf(by-ay); //measures error commited when y is more horizontal than vertical
-        if (ierror > bx - ax) {
-            y += by > ay ? 1 : -1;
-            ierror -= 2 * (bx-ax);
-        }
-
-    }
-    
-}
 
 vector3f convert_to_ndc(vector3f vec, int width, int height) {
     return (vector3f) { (1.0f + vec.x) * width/ 2,
@@ -153,11 +116,14 @@ struct Model* read_model_lines(char *file_name) {
 }
 
 void render_faces(Model* model, vector4f *colors, image_view* color_buffer) {
-    int xoffset = 400;
-    int yoffset = 100;
+  
     double angle = M_PI/6;
-    double *zbuffer = malloc(sizeof(double) * color_buffer->width * color_buffer->height);
-
+    //double *zbuffer = malloc(sizeof(double) * color_buffer->width * color_buffer->height);
+    int zbuf_size = color_buffer->width * color_buffer->height;
+    double *zbuffer = malloc(sizeof(double) * zbuf_size);
+    for (int z = 0; z < zbuf_size; z++) {
+        zbuffer[z] = -DBL_MAX;
+    }
 
     vector3f eye = {-1, 0, 2};
     vector3f center = {0, 0, 0};
@@ -233,6 +199,45 @@ void sort_y_coordinates(vector3f* vectors, int n) {
     }
 }
 
+void line(int ax, int ay, int bx, int by, image_view *color_buffer, vector4f *color) {
+    bool steep = fabsf(ax-bx) < fabsf(ay-by);
+    //If steep (more vertical than horizontal) transpose the image to make line more horizontal
+    if (steep) {
+        swap_int(&ax, &ay);
+        swap_int(&bx, &by);
+    }
+
+    //Make it left-to-right
+    if (ax > bx) {
+        swap_int(&ax, &bx);
+        swap_int(&ay, &by);
+    }
+
+    int y = ay;
+    int ierror = 0;
+
+    for (int x=ax; x <= bx; x++) {
+        //printf("%d, %d", x, y);
+
+        if(steep) //de-transpose if steep
+        {    
+
+            *color_buffer->at(color_buffer, y, x) = to_color4ub(color);
+        } else { 
+
+            *color_buffer->at(color_buffer, x, y) = to_color4ub(color);
+        }
+        ierror += 2 * fabsf(by-ay); //measures error commited when y is more horizontal than vertical
+        if (ierror > bx - ax) {
+            y += by > ay ? 1 : -1;
+            ierror -= 2 * (bx-ax);
+        }
+
+    }
+    
+}
+
+
 
 void triangle_scanline(int ax, int ay, int bx, int by, int cx, int cy, image_view *color_buffer, vector4f *color) {
     vector3f* vectors = (vector3f *)malloc(3* sizeof(vector3f));
@@ -304,6 +309,7 @@ double signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy) {
 
 //Uses bounding box rasterization
 void triangle(matrix4f viewport, double *zbuffer, vector4f clip[3], vector4f color, image_view *color_buffer) {
+
     vector4f ndc[3] = {
         { clip[0].x / clip[0].w, clip[0].y / clip[0].w, clip[0].z / clip[0].w, 1.0f },
         { clip[1].x / clip[1].w, clip[1].y / clip[1].w, clip[1].z / clip[1].w, 1.0f },
@@ -332,10 +338,12 @@ void triangle(matrix4f viewport, double *zbuffer, vector4f clip[3], vector4f col
     for (int x = fmax(bbminx, 0); x <= fmin(bbmaxx, color_buffer->width-1); x++) {
         for (int y = fmax(bbminy,0); y <= fmin(bbmaxy, color_buffer->height-1); y++) {
             //printf("%d, %d \n", x, y);
-            vector3f bc = multiply_mat3f_vec3f(inverse(transpose_mat3f(ABC)), (vector3f){(double)x, (double) y, 1.});
+            vector3f bc = multiply_mat3f_vec3f((inverse(ABC)), (vector3f){(double)x, (double) y, 1.});
+            
+            //printf("%f, %f, %f", bc.x, bc.y, bc.z);
             if (bc.x < 0 || bc.y < 0 || bc.z < 0) 
                 continue;
-
+            
             double z = dot_vec3f(bc, (vector3f){ndc[0].z, ndc[1].z, ndc[2].z});
 
             //Discard pixel p because inferior to z;
@@ -344,7 +352,8 @@ void triangle(matrix4f viewport, double *zbuffer, vector4f clip[3], vector4f col
             
             zbuffer[x+y*color_buffer->width] = z;
             
-            *color_buffer->at(color_buffer, x, y) = (color4ub){color.x, color.y, color.z, color.w};
+            //y growing downward
+            *color_buffer->at(color_buffer, x, (color_buffer->width-y)) = (color4ub){color.x, color.y, color.z, color.w};
             
         }
     }

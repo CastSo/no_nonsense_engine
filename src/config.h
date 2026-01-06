@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <limits.h> 
+#include <float.h> 
 #include <time.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_timer.h>
