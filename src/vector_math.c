@@ -1,5 +1,8 @@
 #include "vector_math.h"
 
+vector3f scale_vec3(vector3f v, float s) {
+    return (vector3f){s * v.x, s * v.y, s * v.z};
+}
 
 double dot_vec2f(vector2f a, vector2f b) {
     return a.x * b.x + a.y * b.y;
@@ -79,6 +82,7 @@ matrix3f transpose_mat3f(matrix3f m) {
 }
 
 matrix3f inverse(matrix3f m){
+    //transpose and inverse
     vector3f a = {m.n00, m.n01, m.n02};
     vector3f b = {m.n10, m.n11, m.n12};
     vector3f c = {m.n20, m.n21, m.n22};
@@ -103,12 +107,12 @@ double determinant(matrix3f m) {
             
 }
 
-double magnitude(vector3f v) {
+double norm(vector3f v) {
     return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 }
 
 vector3f normalize(vector3f v) {
-    return (vector3f){v.x/magnitude(v), v.y/magnitude(v), v.z/magnitude(v)};
+    return (vector3f){v.x/norm(v), v.y/norm(v), v.z/norm(v)};
 }
 
 

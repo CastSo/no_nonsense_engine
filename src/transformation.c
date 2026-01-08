@@ -1,5 +1,13 @@
 #include "transformation.h"
 
+
+ void pipe_vertex(Shader *shader,  int face, int vert) {
+    vector3f v = shader->model->vertices[shader->model->triangles[face+vert]-1];
+    vector4f position = multiply_mat4f_vec4f(shader->ModelView, (vector4f){v.x, v.y, v.z, 1.}); // in object coordinates
+    shader->tri_eye[face] = (vector3f){position.x, position.y, position.z}; //in eye coordinates
+    shader->vertex = multiply_mat4f_vec4f(shader->Perspective, position); // in clip coordinates
+}
+
 void project(vector3f *v, int width, int height) {
     *v = (vector3f) { (v->x + 1.f) * width/2,
                         (1.f - v->y ) * height/2,

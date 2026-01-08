@@ -115,40 +115,28 @@ struct Model* read_model_lines(char *file_name) {
     return model;
 }
 
-void render_faces(Model* model, vector4f *colors, image_view* color_buffer) {
+void render_faces(Shader *shader, double *zbuffer, image_view* color_buffer) {
   
-    double angle = M_PI/6;
-    //double *zbuffer = malloc(sizeof(double) * color_buffer->width * color_buffer->height);
-    int zbuf_size = color_buffer->width * color_buffer->height;
-    double *zbuffer = malloc(sizeof(double) * zbuf_size);
-    for (int z = 0; z < zbuf_size; z++) {
-        zbuffer[z] = -DBL_MAX;
-    }
+    double angle = 45*M_PI/180;
+    
+    vector4f color = {75.0f, 75.0f, 75.0f, 1.0f};
 
-    vector3f eye = {-1, 0, 2};
-    vector3f center = {0, 0, 0};
-    vector3f up = {0, 1, 0};
-
-    //Build matrices for perspective projection
-    matrix4f ModelView = lookat(eye, center, up);
-    matrix4f Perspective = perspective(magnitude(subtract_vec3(eye, center)));
-    matrix4f Viewport = viewport(color_buffer->width/16.f, color_buffer->height/16.f, color_buffer->width*7.f/8.f, color_buffer->height*7.f/8.f);
-   
-
-    for (int i = 0; i < (model->triangles_size); i += 3) {
+    for (int v = 0; v < (shader->model->triangles_size); v += 3) {
         vector4f clip[3];
         //printf("%f, %f, %f \n", colors[i].x, colors[i].y, colors[i].z);
         //printf("%d\n", i);
-        for (int d = 0; d < 3; d++) {
-            vector3f v = model->vertices[model->triangles[i+d]-1];
-            clip[d] = multiply_mat4f_vec4f(multiply_mat4f(Perspective, ModelView), (vector4f){v.x, v.y, v.z, 1.});
+        for (int f = 0; f < 3; f++) {
 
-            //printf("clip.w=%f\n",clip[d].w);
+            // rotation(&shader->model->vertices[shader->model->triangles[f+v]-1], angle);
+            pipe_vertex(shader, f, v);
+            clip[f] = shader->vertex;
+
+            //printf("clip.w=%f\n",clip[f].w);
         }
         
-        triangle(Viewport, zbuffer, clip, colors[i/3], color_buffer);
+        triangle(shader->Viewport, zbuffer, clip, color, color_buffer);
     }
-    free(zbuffer);
+    
 }
 
 void render_wireframe(Model* model, image_view* color_buffer) {
@@ -310,6 +298,9 @@ double signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy) {
 //Uses bounding box rasterization
 void triangle(matrix4f viewport, double *zbuffer, vector4f clip[3], vector4f color, image_view *color_buffer) {
 
+    vector3f sun_pos = {1, 0, 0};
+
+
     vector4f ndc[3] = {
         { clip[0].x / clip[0].w, clip[0].y / clip[0].w, clip[0].z / clip[0].w, 1.0f },
         { clip[1].x / clip[1].w, clip[1].y / clip[1].w, clip[1].z / clip[1].w, 1.0f },
@@ -320,14 +311,25 @@ void triangle(matrix4f viewport, double *zbuffer, vector4f clip[3], vector4f col
         multiply_mat4f_vec4f(viewport, ndc[0]), 
         multiply_mat4f_vec4f(viewport, ndc[1]), 
         multiply_mat4f_vec4f(viewport, ndc[2])};
-
+    
+    //Triangle ABC    
     matrix3f ABC = {
         screen[0].x, screen[0].y, 1.,
         screen[1].x, screen[1].y, 1., 
         screen[2].x, screen[2].y, 1.      
     };
 
-   // printf("%f \n",determinant(ABC));
+    vector3f AB = subtract_vec3((vector3f){screen[0].x, screen[0].y, 1.}, (vector3f){screen[1].x, screen[1].y, 1.});
+    vector3f AC = subtract_vec3((vector3f){screen[0].x, screen[0].y, 1.}, (vector3f){screen[2].x, screen[2].y, 1.});
+    vector3f vec_n = normalize(subtract_vec3(AB, AC));
+    vector3f vec_l = normalize(sun_pos);
+    double diffuse =  abs(dot_vec3f(vec_n,vec_l));
+
+    //vector3f vec_r = subtract_vec3(scale_vec3(scale_vec3(vec_n,2), dot_vec3f(vec_n, vec_l)), vec_l);
+
+
+    
+    //printf("%f \n",screen[0].x);
     if(determinant(ABC) < 1) return;
 
     int bbminx = fmin(fmin(screen[0].x, screen[1].x), screen[2].x);
@@ -350,11 +352,13 @@ void triangle(matrix4f viewport, double *zbuffer, vector4f clip[3], vector4f col
             if (z <= zbuffer[x+y*color_buffer->width])
                 continue;
             
+
             zbuffer[x+y*color_buffer->width] = z;
             
             //y growing downward
-            *color_buffer->at(color_buffer, x, (color_buffer->width-y)) = (color4ub){color.x, color.y, color.z, color.w};
-            
+            //*color_buffer->at(color_buffer, x, (color_buffer->width-y)) = (color4ub){color.x, color.y, color.z, color.w};
+
+            *color_buffer->at(color_buffer, x, (color_buffer->width-y)) = (color4ub){ diffuse* color.x, diffuse * color.y, diffuse * color.z, color.w};
         }
     }
 

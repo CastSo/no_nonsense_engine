@@ -1,6 +1,8 @@
 #include "image_view.h"
 #include "render.h"
 
+
+   
 int main(int argc, char** argv) {
     int SCR_WIDTH = 800;
     int SCR_HEIGHT = 800;
@@ -23,29 +25,45 @@ int main(int argc, char** argv) {
                                         0);
 
     bool run = true;
-    Model *model = read_model_lines("src/models/diablo3_pose.obj");
+    
+    vector3f cam_eye = {-1, 0, 2};
+    vector3f cam_direction = {0, 0, 0};
+    vector3f cam_up = {0, 1, 0};
 
-    vector4f* rand_colors = (vector4f *)malloc((model->triangles_size/3) * sizeof(vector4f));
+    Shader *shader = malloc(sizeof(Shader));
+    shader->model = read_model_lines("src/models/african_head.obj");
+    
+    shader->ModelView = lookat(cam_eye, cam_direction, cam_up);
+    shader->Perspective = perspective(norm(subtract_vec3(cam_eye, cam_direction)));
 
-
-
-    srand(time(NULL));
-
-
-    for (int i = 0; i < (model->triangles_size/3); i++) {
-
-        float rand_f1 = rand() %  256 ;
-        float rand_f2 = rand() %  256 ;
-        float rand_f3 = rand() %  256 ;
-
-        rand_colors[i].x = rand_f1;
-        rand_colors[i].y = rand_f2;
-        rand_colors[i].z = rand_f3;
-
-        rand_colors[i].w = 1.0f;     
-
-    }
+   shader->Viewport = viewport(SCR_WIDTH/16.f, SCR_HEIGHT/16.f, SCR_WIDTH*7.f/8.f, SCR_HEIGHT*7.f/8.f);
    
+
+    // vector4f* rand_colors = (vector4f *)malloc((shader->model->triangles_size/3) * sizeof(vector4f));
+    // srand(time(NULL));
+
+
+    // for (int i = 0; i < (shader->model->triangles_size/3); i++) {
+
+    //     float rand_f1 = rand() %  256 ;
+    //     float rand_f2 = rand() %  256 ;
+    //     float rand_f3 = rand() %  256 ;
+
+    //     rand_colors[i].x = rand_f1;
+    //     rand_colors[i].y = rand_f2;
+    //     rand_colors[i].z = rand_f3;
+
+    //     rand_colors[i].w = 1.0f;     
+
+    // }
+
+    int zbuf_size = SCR_WIDTH * SCR_HEIGHT;
+    double *zbuffer = malloc(sizeof(double) * zbuf_size);
+    for (int z = 0; z < zbuf_size; z++) {
+        zbuffer[z] = -DBL_MAX;
+    }
+
+
     while (run) {
         SDL_Event event;
 
@@ -104,7 +122,12 @@ int main(int argc, char** argv) {
         //Set background color
         clear(&color_buffer, &backgroundColor);
 
-        render_faces(model, rand_colors, &color_buffer);
+        render_faces(shader, zbuffer, &color_buffer);
+        //Reset the zbuffer
+        for (int z = 0; z < zbuf_size; z++) {
+            zbuffer[z] = -DBL_MAX;
+        }
+
         //render_wireframe(model, &color_buffer);
 
 
@@ -121,10 +144,12 @@ int main(int argc, char** argv) {
     }
 
     
-    free(model->vertices);
-    free(model->triangles);
-    free(model);
-    free(rand_colors);
+    free(zbuffer);
+    free(shader->model->triangles);
+    free(shader->model->vertices);
+    free(shader->model);
+    free(shader);
+   // free(rand_colors);
 
 
     SDL_DestroySurface(draw_surface);
