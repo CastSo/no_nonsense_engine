@@ -20,6 +20,10 @@ double norm_vec3f(vector3f v) {
     return sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
 }
 
+vector3f add_vec3(vector3f a, vector3f b) {
+    return (vector3f){a.x + b.x, a.y + b.y, a.z + b.z}; 
+}
+
 vector3f subtract_vec3(vector3f a, vector3f b) {
     return (vector3f){a.x - b.x, a.y - b.y, a.z - b.z}; 
 }

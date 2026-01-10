@@ -1,5 +1,6 @@
 #include "image_view.h"
 #include "render.h"
+#include "model.h"
 
 
    
@@ -37,25 +38,6 @@ int main(int argc, char** argv) {
     shader->Perspective = perspective(norm(subtract_vec3(cam_eye, cam_direction)));
 
    shader->Viewport = viewport(SCR_WIDTH/16.f, SCR_HEIGHT/16.f, SCR_WIDTH*7.f/8.f, SCR_HEIGHT*7.f/8.f);
-   
-
-    // vector4f* rand_colors = (vector4f *)malloc((shader->model->triangles_size/3) * sizeof(vector4f));
-    // srand(time(NULL));
-
-
-    // for (int i = 0; i < (shader->model->triangles_size/3); i++) {
-
-    //     float rand_f1 = rand() %  256 ;
-    //     float rand_f2 = rand() %  256 ;
-    //     float rand_f3 = rand() %  256 ;
-
-    //     rand_colors[i].x = rand_f1;
-    //     rand_colors[i].y = rand_f2;
-    //     rand_colors[i].z = rand_f3;
-
-    //     rand_colors[i].w = 1.0f;     
-
-    // }
 
     int zbuf_size = SCR_WIDTH * SCR_HEIGHT;
     double *zbuffer = malloc(sizeof(double) * zbuf_size);
@@ -147,6 +129,8 @@ int main(int argc, char** argv) {
     free(zbuffer);
     free(shader->model->triangles);
     free(shader->model->vertices);
+    free(shader->model->normals);
+    free(shader->model->textures);
     free(shader->model);
     free(shader);
    // free(rand_colors);

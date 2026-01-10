@@ -1,4 +1,5 @@
 #include "render.h"
+#include <omp.h>
 
 //Fills entire pixel buffer with a color
 void clear(const image_view *color_buffer, const vector4f *color) {
@@ -15,105 +16,6 @@ vector3f convert_to_ndc(vector3f vec, int width, int height) {
                         vec.z};
 }
 
-struct Model* read_model_lines(char *file_name) {
-    FILE *fptr = fopen(file_name, "r");
-    if (fptr == NULL) {
-        perror("Unable to open file");
-        exit(1);
-    }
-
-    Model *model = malloc(sizeof(Model));
-
-    int vertices_size;
-    model->vertices = malloc(1000000 * sizeof(vector3f));
-    int triangles_size;
-    model->triangles = malloc(1000000 * sizeof(int));
-
-    char *buffer;
-    size_t buffer_size = 256;
-    size_t characters;
-
-    char *line = NULL;
-    const char *delim = " ";
-    int line_count = 0;
-    bool vertices_end = false;
-
-    buffer = malloc(buffer_size * sizeof(char));
-
-    int vert_i = 0;
-    int face_i = 0;
-
-    char* saveptr1;
-
-    int width_scale = 800;
-    int height_scale = 800;
-    int yoffset = 200;
-    
-    //Checks only vertices
-    while (getline(&buffer, &buffer_size, fptr) != -1) 
-    {
-        
-        line = strtok_r(buffer, delim, &saveptr1);
-       
-        if (strcmp(line, "v") == 0)
-        {    
-            //Skips char v
-            line = strtok_r(NULL, delim, &saveptr1);
-
-            char *endptr;
-            double x = strtod(line, &endptr);
-            model->vertices[vert_i].x = x;
-            
-            line = strtok_r(NULL, delim, &saveptr1);
-            
-            endptr = NULL;
-            double y = strtod(line, &endptr);
-            model->vertices[vert_i].y = y;
-            line = strtok_r(NULL, delim, &saveptr1);
-
-            endptr = NULL;
-            model->vertices[vert_i].z = strtod(line, &endptr);
-            line = strtok_r(NULL, delim, &saveptr1);
-
-            
-            //printf("%f, %f, %f\n", model->vertices[vert_i].x, model->vertices[vert_i].y, model->vertices[vert_i].z);
-            vert_i++;
-            
-            
-        } else if (strcmp(line, "f") == 0) {
-            char *saveptr2;
-            
-            //Only checks the first index of each word
-            while (line != NULL) {      
-                //Skips char f
-                char *current_vert = strtok_r(line, "", &saveptr2);
-
-                if(atoi(current_vert) != 0) {
-                    model->triangles[face_i] = atoi(current_vert);
-                    // printf("%d\n",  model->triangles[face_i]);
-                    face_i++;
-                }
-                
-                line = strtok_r(NULL, delim, &saveptr1);
-
-            }
-
-        } 
-        
-        
-        //printf("end line");
-
-
-    }
-
-    fclose(fptr);
-    free(buffer);
-    
-    model->vertices_size = vert_i;
-    model->triangles_size = face_i;
-
-    return model;
-}
 
 void render_faces(Shader *shader, double *zbuffer, image_view* color_buffer) {
   
@@ -126,18 +28,20 @@ void render_faces(Shader *shader, double *zbuffer, image_view* color_buffer) {
     for (int v = 0; v < (shader->model->triangles_size); v += 3) {
         vector4f clip[3];
         vector4f eye[3];
-        //printf("%f, %f, %f \n", colors[i].x, colors[i].y, colors[i].z);
-        //printf("%d\n", i);
+        vector4f texture[3];
+
+
         for (int f = 0; f < 3; f++) {
 
             // rotation(&shader->model->vertices[shader->model->triangles[f+v]-1], angle);
             pipe_vertex(shader, f, v);
-            clip[f] = shader->vertex;
-            eye[f] = shader->tri_eye;
+            clip[f] = shader->clip;
+            eye[f] = shader->eye;
+            texture[f] = shader->texture;
             //printf("clip.w=%f\n",clip[f].w);
         }
         
-        triangle(shader->Viewport, zbuffer, eye, clip, color, color_buffer);
+        triangle(shader->Viewport, zbuffer, texture, eye, clip, color, color_buffer);
     }
     
 }
@@ -299,8 +203,8 @@ double signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy) {
 }
 
 //Uses bounding box rasterization
-void triangle(matrix4f viewport, double *zbuffer, vector4f eye[3], vector4f clip[3], vector4f color, image_view *color_buffer) {
-
+void triangle(matrix4f viewport, double *zbuffer, vector4f texture[3], vector4f eye[3], vector4f clip[3], vector4f color, image_view *color_buffer) {
+    
     vector3f sun_pos = {1, 0, 0};
     vector3f cam_pos = {-1, 0, 2};
 
@@ -322,29 +226,36 @@ void triangle(matrix4f viewport, double *zbuffer, vector4f eye[3], vector4f clip
         screen[1].x, screen[1].y, 1., 
         screen[2].x, screen[2].y, 1.      
     };
-    //Uses eye coordinates to get triangle vectors
-    vector3f AB = subtract_vec3((vector3f){eye[0].x, eye[0].y, eye[0].z}, (vector3f){eye[1].x, eye[1].y, eye[1].z});
-    vector3f AC = subtract_vec3((vector3f){eye[0].x, eye[0].y, eye[0].z}, (vector3f){eye[2].x, eye[2].y, eye[2].z});
-    vector3f vec_n = normalize(cross(AB, AC)); // orthogonal to triangle
-    vector3f vec_l = normalize(sun_pos); // direction toward sun
-    double diffuse = fmax(0,dot_vec3f(vec_n,vec_l));
-    
-    int e = 1;
-    vector3f vec_v = normalize(cam_pos); //fragment to sun
-    vector3f vec_r = subtract_vec3(scale_vec3(scale_vec3(vec_n,2), dot_vec3f(vec_n, vec_l)), vec_l); //reflection of sun
-    double specular = pow(fmax(0, dot_vec3f(vec_r, vec_v)), e); 
-
-    //printf("%f \n",screen[0].x);
     if(determinant(ABC) < 1) return;
 
     int bbminx = fmin(fmin(screen[0].x, screen[1].x), screen[2].x);
     int bbminy = fmin(fmin(screen[0].y, screen[1].y), screen[2].y);
     int bbmaxx = fmax(fmax(screen[0].x, screen[1].x), screen[2].x);
     int bbmaxy = fmax(fmax(screen[0].y, screen[1].y), screen[2].y);
+    double total_area = signed_triangle_area(screen[0].x, screen[0].y, screen[1].x, screen[1].y, screen[2].x, screen[2].y);
    // printf("%f \n", diffuse);
+   #pragma omp parallel for
     for (int x = fmax(bbminx, 0); x <= fmin(bbmaxx, color_buffer->width-1); x++) {
         for (int y = fmax(bbminy,0); y <= fmin(bbmaxy, color_buffer->height-1); y++) {
-            //printf("%d, %d \n", x, y);
+            double alpha = signed_triangle_area(x, y, screen[1].x, screen[1].y, screen[2].x, screen[2].y) / total_area;
+            double beta  = signed_triangle_area(x, y, screen[2].x, screen[2].y, screen[0].x, screen[0].y) / total_area;
+            double gamma = signed_triangle_area(x, y, screen[0].x, screen[0].y, screen[1].x, screen[1].y) / total_area;
+
+            vector3f AB = subtract_vec3((vector3f){texture[0].x, texture[0].y, texture[0].z}, (vector3f){texture[1].x, texture[1].y, texture[1].z});
+            vector3f AC = subtract_vec3((vector3f){texture[0].x, texture[0].y, texture[0].z}, (vector3f){texture[2].x, texture[2].y, texture[2].z});
+
+
+            vector3f n = add_vec3(add_vec3((vector3f){texture[0].x, texture[0].y, texture[0].z}, (vector3f){texture[1].x, texture[1].y, texture[1].z}), (vector3f){texture[2].x, texture[2].y, texture[2].z});
+            vector3f vec_n = normalize((vector3f){n.x * 2.0 - 1.0, n.y* 2.0 - 1.0, n.x *  2.0 - 1.0});
+            vector3f vec_l = normalize(sun_pos); // direction toward sun
+            
+            
+            int e = 1;
+            vector3f vec_v = normalize(cam_pos); //fragment to sun
+            vector3f vec_r = subtract_vec3(scale_vec3(scale_vec3(vec_n,2), dot_vec3f(vec_n, vec_l)), vec_l); //reflection of sun
+            double specular = pow(fmax(0, dot_vec3f(vec_r, vec_v)), e); 
+
+
             vector3f bc = multiply_mat3f_vec3f((inverse(ABC)), (vector3f){(double)x, (double) y, 1.});
             
             //printf("%f, %f, %f", bc.x, bc.y, bc.z);
@@ -356,14 +267,14 @@ void triangle(matrix4f viewport, double *zbuffer, vector4f eye[3], vector4f clip
             //Discard pixel p because inferior to z;
             if (z <= zbuffer[x+y*color_buffer->width])
                 continue;
-            
 
             zbuffer[x+y*color_buffer->width] = z;
+            //printf("%f, %f, %f \n", specular*color.x, specular*color.y, specular*color.z);
             
+            color4ub color_rgba =  { specular* color.x , specular * color.y, specular * color.z, color.w};
             //y growing downward
-            //*color_buffer->at(color_buffer, x, (color_buffer->width-y)) = (color4ub){color.x, color.y, color.z, color.w};
-
-            *color_buffer->at(color_buffer, x, (color_buffer->width-y)) = (color4ub){ specular* color.x, specular * color.y, specular * color.z, color.w};
+            *color_buffer->at(color_buffer, x, (color_buffer->width-y)) = color_rgba;
+            
         }
     }
 
