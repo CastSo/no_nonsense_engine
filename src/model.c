@@ -85,8 +85,8 @@ struct Model* read_model_lines(char *file_name) {
 
                 int v = atoi(vert);
                 if(v != 0) {
-                    
-                    line_vert[n] = v;
+                    //vertices on faces start at 1
+                    line_vert[n] = v-1;
                     n += 1;
                 }
                 //Use later when want to get face data of vn and vt

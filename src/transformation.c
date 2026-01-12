@@ -1,26 +1,27 @@
 #include "transformation.h"
 
 
- void pipe_vertex(Shader *shader, int face, int vert) {
-    double angle = 90*M_PI/180;
-    vector3f v = shader->model->vertices[shader->model->triangles[face+vert]-1];
-    vector3f t = shader->model->textures[shader->model->triangles[face+vert]-1];
-    vector3f n = shader->model->normals[shader->model->triangles[face+vert]-1];
+ void pipe_vertex(Shader *shader, int face, int vert, float angle) {
+    vector3f scaling = (vector3f) {0.5, 0.5, 0.5};
+    vector3f v = shader->model->vertices[shader->model->triangles[face+vert]];
+    //vector3f t = shader->model->textures[shader->model->triangles[face+vert]-1];
+    vector3f n = shader->model->normals[shader->model->triangles[face+vert]];
     vector4f position = multiply_mat4f_vec4f(shader->ModelView, (vector4f){v.x, v.y, v.z, 1.}); // in object coordinates
-    vector3f t_norm =  normalize(t);
     shader->normal =  multiply_mat4f_vec4f(shader->ModelView, (vector4f){n.x, n.y, n.z, 0.}); 
-    shader->texture =  multiply_mat4f_vec4f(shader->ModelView, (vector4f){t_norm.x, t_norm.y, t_norm.z, 0.}); 
+    //shader->texture =  multiply_mat4f_vec4f(shader->ModelView, (vector4f){t_norm.x, t_norm.y, t_norm.z, 0.}); 
     
     shader->eye = (vector4f){position.x, position.y, position.z, position.w}; //in eye coordinates
     shader->clip = multiply_mat4f_vec4f(shader->Perspective, position); // in clip coordinates
 
-    // rotation(&shader->normal, angle);
-    // rotation(&shader->eye, angle);
-    // rotation(&shader->clip, angle);
 
-    scale(&shader->normal, (vector3f){0.1, 0.1, 0.1});
-    scale(&shader->eye, (vector3f){0.1, 0.1, 0.1});
-    scale(&shader->clip, (vector3f){0.1, 0.1, 0.1});
+
+    shader->normal = scale(shader->normal, scaling);
+    shader->eye = scale(shader->eye, scaling);
+    shader->clip = scale(shader->clip,scaling);
+    shader->normal = rotateY(shader->normal, angle);
+    shader->eye = rotateY(shader->eye, angle);
+    shader->clip = rotateY(shader->clip, angle);
+
 
 }
 
@@ -57,20 +58,72 @@ matrix4f lookat(vector3f eye, vector3f center, vector3f up) {
 
 }
 
-void rotation(vector4f *v, double a) {
+vector4f rotateY(vector4f v, double a) {
     
-    matrix3f mat = (matrix3f){cos(a), 0, sin(a),
-                                0,  1,  0,
-                              -sin(a), 0, cos(a)};
-    vector3f v_vec3 = multiply_mat3f_vec3f(mat, (vector3f){v->x, v->y, v->z});
-    *v = (vector4f){v_vec3.x, v_vec3.y, v_vec3.z, v->w};
+    matrix4f mat =  {cos(a), 0, sin(a), 0,
+                     0,  1, 0, 0,
+                    -sin(a), 0, cos(a), 0,
+                     0, 0, 0, 1};
+    return multiply_mat4f_vec4f(mat, v);
+
 }
 
-void scale(vector4f* v, vector3f s) {
-    matrix3f mat = (matrix3f){s.x, 0, 0,
-                               0, s.y,0,
-                               0, 0, s.z};
+void rotateX(vector4f *v, double a) {
+    
+    matrix4f mat =  {1, 0, 0, 0,
+                    0, cos(a), -sin(a), 0,
+                    0, sin(a), cos(a), 0,
+                    0, 0, 0, 1};
 
-    vector3f v_vec3 = multiply_mat3f_vec3f(mat, (vector3f){v->x, v->y, v->z});
-    *v = (vector4f){v_vec3.x, v_vec3.y, v_vec3.z, v->w};
+    *v  = multiply_mat4f_vec4f(mat, *v);
+
+}
+
+
+void rotateZ(vector4f *v, double a) {
+    
+    matrix4f mat = { cos(a), -sin(a), 0, 0,
+                    sin(a), cos(a), 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1 };
+
+    *v  = multiply_mat4f_vec4f(mat, *v);
+
+}
+
+vector4f scale(vector4f v, vector3f s) {
+    matrix4f mat = {s.x, 0, 0, 0,
+                    0, s.y,0, 0,
+                    0, 0, s.z, 0,
+                    0, 0, 0, 1};
+    
+    return multiply_mat4f_vec4f(mat, v);
+
+}
+
+vector3f *find_normals(vector3f* v, int vertices_size, int* triangles, int triangles_size) {
+    vector3f *normals = malloc(vertices_size * sizeof(vector3f));
+    
+    for(int i = 0; i < triangles_size; i += 3) {
+        printf("%d", i);
+        //Triangles stored together
+        vector3f a = v[triangles[i]];
+        vector3f b = v[triangles[i+1]];
+        vector3f c = v[triangles[i+2]];
+
+        vector3f ab = subtract_vec3(a, b);
+        vector3f ac = subtract_vec3(a, c);
+        vector3f bc = subtract_vec3(b, c);
+        
+        vector3f aN = cross(ab, ac);
+        vector3f bN = cross (ab, bc);
+        vector3f cN = cross(ac, bc);
+
+        normals[triangles[i]] = aN;
+        normals[triangles[i+1]] = bN;
+        normals[triangles[i+2]] = cN;
+
+    }
+
+    return normals;
 }

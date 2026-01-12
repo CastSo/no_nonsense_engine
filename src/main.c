@@ -27,17 +27,91 @@ int main(int argc, char** argv) {
 
     bool run = true;
     
-    vector3f cam_eye = {-1, 0, 2};
+    vector3f cam_eye = {1, 0, 4};
     vector3f cam_direction = {0, 0, 0};
     vector3f cam_up = {0, 1, 0};
+        
+    Shader *cube = malloc(sizeof(Shader));
+    cube->model = malloc(sizeof(Model));
 
-    Shader *shader = malloc(sizeof(Shader));
-    shader->model = read_model_lines("src/models/utah_teapot.obj");
-    
-    shader->ModelView = lookat(cam_eye, cam_direction, cam_up);
-    shader->Perspective = perspective(norm(subtract_vec3(cam_eye, cam_direction)));
+    int vert_count = 36;
+    double vertices[108] ={
+        -0.5f, -0.5f, -0.5f,  
+         0.5f, -0.5f, -0.5f,  
+         0.5f,  0.5f, -0.5f,  
+         0.5f,  0.5f, -0.5f,  
+        -0.5f,  0.5f, -0.5f,  
+        -0.5f, -0.5f, -0.5f,  
 
-   shader->Viewport = viewport(SCR_WIDTH/16.f, SCR_HEIGHT/16.f, SCR_WIDTH*7.f/8.f, SCR_HEIGHT*7.f/8.f);
+        -0.5f, -0.5f,  0.5f,  
+         0.5f, -0.5f,  0.5f,  
+         0.5f,  0.5f,  0.5f,  
+         0.5f,  0.5f,  0.5f,  
+        -0.5f,  0.5f,  0.5f,  
+        -0.5f, -0.5f,  0.5f,  
+
+        -0.5f,  0.5f,  0.5f,  
+        -0.5f,  0.5f, -0.5f,  
+        -0.5f, -0.5f, -0.5f,  
+        -0.5f, -0.5f, -0.5f,  
+        -0.5f, -0.5f,  0.5f,  
+        -0.5f,  0.5f,  0.5f,  
+
+         0.5f,  0.5f,  0.5f,  
+         0.5f,  0.5f, -0.5f,  
+         0.5f, -0.5f, -0.5f,  
+         0.5f, -0.5f, -0.5f,  
+         0.5f, -0.5f,  0.5f,  
+         0.5f,  0.5f,  0.5f,  
+
+        -0.5f, -0.5f, -0.5f,  
+         0.5f, -0.5f, -0.5f,  
+         0.5f, -0.5f,  0.5f,  
+         0.5f, -0.5f,  0.5f,  
+        -0.5f, -0.5f,  0.5f,  
+        -0.5f, -0.5f, -0.5f,  
+
+        -0.5f,  0.5f, -0.5f,  
+         0.5f,  0.5f, -0.5f,  
+         0.5f,  0.5f,  0.5f,  
+         0.5f,  0.5f,  0.5f,  
+        -0.5f,  0.5f,  0.5f,  
+        -0.5f,  0.5f, -0.5f,  
+    };
+    cube->model->vertices = malloc(vert_count * sizeof(vector3f));
+    int v_i = 0;
+    for(int i = 0; i < 36; i++ ) {
+        
+        cube->model->vertices[i].x = vertices[v_i];
+        v_i++;
+        cube->model->vertices[i].y = vertices[v_i];
+        v_i++;
+        cube->model->vertices[i].z = vertices[v_i];
+        v_i++;
+
+    }
+
+    cube->model->vertices_size = vert_count;
+    cube->model->normals = find_normals(cube->model->vertices, cube->model->vertices_size, cube->model->triangles, cube->model->triangles_size);
+
+    cube->model->norm_size = vert_count;
+
+    //vert indices
+    int triangles[36];
+    for(int i = 0; i < 36; i++) {
+        triangles[i] = i;
+    }
+
+    cube->model->triangles = triangles;
+    cube->model->triangles_size = 36;
+
+    //cube->model->textures = malloc(100000 * sizeof(vector3f));
+
+    cube->ModelView = lookat(cam_eye, cam_direction, cam_up);
+    cube->Perspective = perspective(norm(subtract_vec3(cam_eye, cam_direction)));
+
+    cube->Viewport = viewport(SCR_WIDTH/16.f, SCR_HEIGHT/16.f, SCR_WIDTH*7.f/8.f, SCR_HEIGHT*7.f/8.f);
+
 
     int zbuf_size = SCR_WIDTH * SCR_HEIGHT;
     double *zbuffer = malloc(sizeof(double) * zbuf_size);
@@ -45,10 +119,17 @@ int main(int argc, char** argv) {
         zbuffer[z] = -DBL_MAX;
     }
 
-    printf("%d", shader->model->vertices_size);
+    Uint64 current_time ;
+    Uint64 last_time;
+    double dt = 0;
 
+    int angle =0;
     while (run) {
         SDL_Event event;
+        last_time = current_time;
+        current_time = SDL_GetPerformanceCounter();
+        
+        dt = (double)((current_time - last_time)*50 / (double)SDL_GetPerformanceFrequency());
 
         while(SDL_PollEvent(&event)) {
             switch (event.type){
@@ -105,7 +186,12 @@ int main(int argc, char** argv) {
         //Set background color
         clear(&color_buffer, &backgroundColor);
 
-        render_faces(shader, zbuffer, &color_buffer);
+        angle += dt;
+
+        //printf("%f \n", dt);
+        if(angle > 360)
+            angle = 0;
+        render_faces(cube, zbuffer, &color_buffer, angle);
         //Reset the zbuffer
         for (int z = 0; z < zbuf_size; z++) {
             zbuffer[z] = -DBL_MAX;
@@ -129,12 +215,12 @@ int main(int argc, char** argv) {
 
     
     free(zbuffer);
-    free(shader->model->triangles);
-    free(shader->model->vertices);
-    free(shader->model->normals);
-    free(shader->model->textures);
-    free(shader->model);
-    free(shader);
+    //free(shader->model->triangles);
+    free(cube->model->vertices);
+    free(cube->model->normals);
+    //free(shader->model->textures);
+    free(cube->model);
+    free(cube);
    // free(rand_colors);
 
 

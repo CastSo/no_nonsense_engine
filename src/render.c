@@ -17,29 +17,27 @@ vector3f convert_to_ndc(vector3f vec, int width, int height) {
 }
 
 
-void render_faces(Shader *shader, double *zbuffer, image_view* color_buffer) {
+void render_faces(Shader *shader, double *zbuffer, image_view* color_buffer, float angle) {
 
     
     vector4f color = {255.0f, 255.0f, 255.0f, 255.0f};
 
     for (int v = 0; v < (shader->model->triangles_size); v += 3) {
+      
         vector4f clip[3];
         vector4f eye[3];
-        vector4f texture[3];
         vector4f normal[3];
 
 
         for (int f = 0; f < 3; f++) {
 
-            // rotation(&shader->model->vertices[shader->model->triangles[f+v]-1], angle);
-            pipe_vertex(shader, f, v);
+            pipe_vertex(shader, f, v, angle);
             clip[f] = shader->clip;
             eye[f] = shader->eye;
-            texture[f] = shader->texture;
             normal[f] = shader->normal;
         }
         
-       triangle(shader->Viewport, zbuffer, normal, texture, eye, clip, color, color_buffer);
+       triangle(shader->Viewport, zbuffer, normal, eye, clip, color, color_buffer);
     }
     
 }
@@ -201,10 +199,10 @@ double signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy) {
 }
 
 //Uses bounding box rasterization
-void triangle(matrix4f viewport, double *zbuffer, vector4f normal[3], vector4f texture[3], vector4f eye[3], vector4f clip[3], vector4f color, image_view *color_buffer) {
+void triangle(matrix4f viewport, double *zbuffer, vector4f normal[3], vector4f eye[3], vector4f clip[3], vector4f color, image_view *color_buffer) {
     
     vector3f sun_pos = {1, 0, 0};
-    vector3f cam_pos = {-1, 0, 2};
+    vector3f cam_pos = {1, 0, 4};
 
 
     vector4f ndc[3] = {
@@ -224,6 +222,9 @@ void triangle(matrix4f viewport, double *zbuffer, vector4f normal[3], vector4f t
         screen[1].x, screen[1].y, 1., 
         screen[2].x, screen[2].y, 1.      
     };
+
+
+    //backface culling
     if(determinant(ABC) < 1) return;
 
     int bbminx = fmin(fmin(screen[0].x, screen[1].x), screen[2].x);

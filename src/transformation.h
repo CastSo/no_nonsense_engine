@@ -30,7 +30,7 @@ struct Shader {
     matrix4f Viewport;
 
 };
-void pipe_vertex(Shader *shader, int face, int vert);
+void pipe_vertex(Shader *shader, int face, int vert, float angle);
 
 void project(vector3f *v, int width, int height);
 
@@ -38,5 +38,9 @@ matrix4f viewport(int x, int y, int w, int h);
 matrix4f perspective(double f);
 matrix4f lookat(vector3f eye, vector3f center, vector3f up); 
 
-void rotation(vector4f *v, double a);
-void scale(vector4f* v, vector3f s);
+vector4f rotateY(vector4f v, double a);
+void rotateX(vector4f *v, double a);
+void rotateZ(vector4f *v, double a);
+vector4f scale(vector4f v, vector3f s);
+
+vector3f *find_normals(vector3f* v, int vertices_size, int* triangles, int triangles_size);
