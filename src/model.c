@@ -69,7 +69,6 @@ struct Model* read_model_lines(char *file_name) {
             model->vertices[vert_i].z = strtod(line, &endptr);
             line = strtok_r(NULL, delim, &saveptr1);
 
-            printf("%f, %f, %f\n",  model->vertices[vert_i].x, model->vertices[vert_i].y, model->vertices[vert_i].z);
             vert_i++;
             
             

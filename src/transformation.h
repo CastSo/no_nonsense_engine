@@ -13,6 +13,11 @@ typedef struct Model {
     int triangles_size;
     int norm_size;
     int texture_size;
+
+    vector4f color;
+
+    float angle;
+    float scale;
 }Model;
 
 
@@ -30,7 +35,7 @@ struct Shader {
     matrix4f Viewport;
 
 };
-void pipe_vertex(Shader *shader, int face, int vert, float angle);
+void pipe_vertex(Shader *shader, int face, int vert, float move);
 
 void project(vector3f *v, int width, int height);
 
@@ -39,8 +44,9 @@ matrix4f perspective(double f);
 matrix4f lookat(vector3f eye, vector3f center, vector3f up); 
 
 vector4f rotateY(vector4f v, double a);
-void rotateX(vector4f *v, double a);
-void rotateZ(vector4f *v, double a);
+vector4f rotateX(vector4f v, double a);
+vector4f rotateZ(vector4f v, double a);
 vector4f scale(vector4f v, vector3f s);
+vector4f translate(vector4f v, vector3f t);
 
 vector3f *find_normals(vector3f* v, int vertices_size, int* triangles, int triangles_size);

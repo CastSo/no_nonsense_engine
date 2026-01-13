@@ -17,10 +17,7 @@ vector3f convert_to_ndc(vector3f vec, int width, int height) {
 }
 
 
-void render_faces(Shader *shader, double *zbuffer, image_view* color_buffer, float angle) {
-
-    
-    vector4f color = {255.0f, 255.0f, 255.0f, 255.0f};
+void render_faces(Shader *shader, double *zbuffer, image_view* color_buffer, bool is_bf_cull, float move) {
 
     for (int v = 0; v < (shader->model->triangles_size); v += 3) {
       
@@ -31,13 +28,13 @@ void render_faces(Shader *shader, double *zbuffer, image_view* color_buffer, flo
 
         for (int f = 0; f < 3; f++) {
 
-            pipe_vertex(shader, f, v, angle);
+            pipe_vertex(shader, f, v, move);
             clip[f] = shader->clip;
             eye[f] = shader->eye;
             normal[f] = shader->normal;
         }
         
-       triangle(shader->Viewport, zbuffer, normal, eye, clip, color, color_buffer);
+       triangle(shader->Viewport, zbuffer, normal, eye, clip, shader->model->color, color_buffer, is_bf_cull);
     }
     
 }
@@ -199,10 +196,10 @@ double signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy) {
 }
 
 //Uses bounding box rasterization
-void triangle(matrix4f viewport, double *zbuffer, vector4f normal[3], vector4f eye[3], vector4f clip[3], vector4f color, image_view *color_buffer) {
+void triangle(matrix4f viewport, double *zbuffer, vector4f normal[3], vector4f eye[3], vector4f clip[3], vector4f color, image_view *color_buffer, bool is_backface_cull) {
     
-    vector3f sun_pos = {1, 0, 0};
-    vector3f cam_pos = {1, 0, 4};
+    vector3f sun_pos = {2, 0, 0};
+    vector3f cam_pos = {0, 0, 6};
 
 
     vector4f ndc[3] = {
@@ -225,7 +222,7 @@ void triangle(matrix4f viewport, double *zbuffer, vector4f normal[3], vector4f e
 
 
     //backface culling
-    if(determinant(ABC) < 1) return;
+    if(determinant(ABC) < 1 && is_backface_cull) return;
 
     int bbminx = fmin(fmin(screen[0].x, screen[1].x), screen[2].x);
     int bbminy = fmin(fmin(screen[0].y, screen[1].y), screen[2].y);
@@ -236,15 +233,21 @@ void triangle(matrix4f viewport, double *zbuffer, vector4f normal[3], vector4f e
    #pragma omp parallel for
     for (int x = fmax(bbminx, 0); x <= fmin(bbmaxx, color_buffer->width-1); x++) {
         for (int y = fmax(bbminy,0); y <= fmin(bbmaxy, color_buffer->height-1); y++) {
-            double alpha = signed_triangle_area(x, y, screen[1].x, screen[1].y, screen[2].x, screen[2].y) / total_area;
-            double beta  = signed_triangle_area(x, y, screen[2].x, screen[2].y, screen[0].x, screen[0].y) / total_area;
-            double gamma = signed_triangle_area(x, y, screen[0].x, screen[0].y, screen[1].x, screen[1].y) / total_area;
+
+            //Barycentric coordinates
+            vector3f bc = multiply_mat3f_vec3f((inverse(ABC)), (vector3f){(double)x, (double) y, 1.});
+            //Checks if pixel outside triangle
+            if (bc.x < 0 || bc.y < 0 || bc.z < 0) 
+                continue;
+            // double alpha = signed_triangle_area(x, y, screen[1].x, screen[1].y, screen[2].x, screen[2].y) / total_area;
+            // double beta  = signed_triangle_area(x, y, screen[2].x, screen[2].y, screen[0].x, screen[0].y) / total_area;
+            // double gamma = signed_triangle_area(x, y, screen[0].x, screen[0].y, screen[1].x, screen[1].y) / total_area;
 
             vector3f AB = subtract_vec3((vector3f){normal[0].x, normal[0].y, normal[0].z}, (vector3f){normal[1].x, normal[1].y, normal[1].z});
             vector3f AC = subtract_vec3((vector3f){normal[0].x, normal[0].y, normal[0].z}, (vector3f){normal[2].x, normal[2].y, normal[2].z});
 
 
-            vector3f n = add_vec3(add_vec3(scale_vec3((vector3f){normal[0].x, normal[0].y, normal[0].z}, alpha), scale_vec3((vector3f){normal[1].x, normal[1].y, normal[1].z},beta)), scale_vec3((vector3f){normal[2].x, normal[2].y, normal[2].z}, gamma));
+            vector3f n = add_vec3(add_vec3(scale_vec3((vector3f){normal[0].x, normal[0].y, normal[0].z}, bc.x), scale_vec3((vector3f){normal[1].x, normal[1].y, normal[1].z},bc.y)), scale_vec3((vector3f){normal[2].x, normal[2].y, normal[2].z}, bc.z));
             vector3f vec_n = normalize(n);
             vector3f vec_l = normalize(sun_pos); // direction toward sun
             
@@ -254,15 +257,10 @@ void triangle(matrix4f viewport, double *zbuffer, vector4f normal[3], vector4f e
             vector3f vec_r = subtract_vec3(scale_vec3(scale_vec3(vec_n,2), dot_vec3f(vec_n, vec_l)), vec_l); //reflection of sun
             double specular = pow(fmax(0, dot_vec3f(vec_r, vec_v)), e); 
 
-
-            vector3f bc = multiply_mat3f_vec3f((inverse(ABC)), (vector3f){(double)x, (double) y, 1.});
             
-            //printf("%f, %f, %f", bc.x, bc.y, bc.z);
-            if (bc.x < 0 || bc.y < 0 || bc.z < 0) 
-                continue;
+    
             
             double z = dot_vec3f(bc, (vector3f){ndc[0].z, ndc[1].z, ndc[2].z});
-
             //Discard pixel p because inferior to z;
             if (z <= zbuffer[x+y*color_buffer->width])
                 continue;
@@ -271,9 +269,6 @@ void triangle(matrix4f viewport, double *zbuffer, vector4f normal[3], vector4f e
 
             int normal_y = color_buffer->width-y-1;
             
-            //Do not exceed screen :)
-            if(x < 0 || x >= color_buffer->width || normal_y < 0 || normal_y >= color_buffer->height) 
-                continue;
 
             //y growing downward
             *color_buffer->at(color_buffer, x, normal_y) = (color4ub) { specular* color.x , specular * color.y, specular * color.z, color.w};

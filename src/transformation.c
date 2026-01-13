@@ -1,8 +1,8 @@
 #include "transformation.h"
 
 
- void pipe_vertex(Shader *shader, int face, int vert, float angle) {
-    vector3f scaling = (vector3f) {0.5, 0.5, 0.5};
+ void pipe_vertex(Shader *shader, int face, int vert, float move) {
+    vector3f scaling = (vector3f) {shader->model->scale, shader->model->scale, shader->model->scale};
     vector3f v = shader->model->vertices[shader->model->triangles[face+vert]];
     //vector3f t = shader->model->textures[shader->model->triangles[face+vert]-1];
     vector3f n = shader->model->normals[shader->model->triangles[face+vert]];
@@ -18,10 +18,16 @@
     shader->normal = scale(shader->normal, scaling);
     shader->eye = scale(shader->eye, scaling);
     shader->clip = scale(shader->clip,scaling);
-    shader->normal = rotateY(shader->normal, angle);
-    shader->eye = rotateY(shader->eye, angle);
-    shader->clip = rotateY(shader->clip, angle);
-
+    shader->normal = rotateY(shader->normal, shader->model->angle);
+    shader->eye = rotateY(shader->eye, shader->model->angle);
+    shader->clip = rotateY(shader->clip, shader->model->angle);
+    shader->normal = rotateX(shader->normal, shader->model->angle);
+    shader->eye = rotateX(shader->eye, shader->model->angle);
+    shader->clip = rotateX(shader->clip, shader->model->angle);
+    
+    shader->clip = translate(shader->clip, (vector3f){0.0f, move, 0.0f});
+    shader->eye = translate(shader->eye, (vector3f){0.0f, move, 0.0f});
+    shader->normal = translate(shader->normal, (vector3f){0.0f, move, 0.0f});
 
 }
 
@@ -68,26 +74,26 @@ vector4f rotateY(vector4f v, double a) {
 
 }
 
-void rotateX(vector4f *v, double a) {
+vector4f rotateX(vector4f v, double a) {
     
     matrix4f mat =  {1, 0, 0, 0,
                     0, cos(a), -sin(a), 0,
                     0, sin(a), cos(a), 0,
                     0, 0, 0, 1};
 
-    *v  = multiply_mat4f_vec4f(mat, *v);
+    return multiply_mat4f_vec4f(mat, v);
 
 }
 
 
-void rotateZ(vector4f *v, double a) {
+vector4f rotateZ(vector4f v, double a) {
     
     matrix4f mat = { cos(a), -sin(a), 0, 0,
                     sin(a), cos(a), 0, 0,
                     0, 0, 1, 0,
                     0, 0, 0, 1 };
 
-    *v  = multiply_mat4f_vec4f(mat, *v);
+    return multiply_mat4f_vec4f(mat, v);
 
 }
 
@@ -105,7 +111,6 @@ vector3f *find_normals(vector3f* v, int vertices_size, int* triangles, int trian
     vector3f *normals = malloc(vertices_size * sizeof(vector3f));
     
     for(int i = 0; i < triangles_size; i += 3) {
-        printf("%d", i);
         //Triangles stored together
         vector3f a = v[triangles[i]];
         vector3f b = v[triangles[i+1]];
@@ -126,4 +131,12 @@ vector3f *find_normals(vector3f* v, int vertices_size, int* triangles, int trian
     }
 
     return normals;
+}
+
+vector4f translate(vector4f v, vector3f t) {
+    matrix4f mat = {1, 0, 0, t.x,
+                    0, 1, 0, t.y,
+                    0, 0, 1, t.z,
+                    0, 0, 0,  1};
+    return multiply_mat4f_vec4f(mat, (vector4f){v.x, v.y, v.z, 1});
 }

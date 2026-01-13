@@ -44,13 +44,24 @@ add_executable(tiny_renderer WIN32
     ./src/image_view.c
     ./src/render.c
     ./src/util/util.c
-    ./dependencies
     ./src/component.h)
 
 # set the include directory
-target_include_directories(tiny_renderer PUBLIC ${SDL3_INCLUDE_DIRS})
+target_include_directories(tiny_renderer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src  ${CMAKE_CURRENT_SOURCE_DIR}/dependencies)
 
 target_compile_definitions(tiny_renderer PRIVATE SDL_MAIN_USE_CALLBACKS)
+#target_compile_definitions(tiny_renderer PRIVATE 
+#
+#    NK_INCLUDE_STANDARD_VARARGS
+#    NK_INCLUDE_STANDARD_IO
+#    NK_INCLUDE_FONT_BAKING
+#    NK_INCLUDE_DEFAULT_FONT
+#    NK_INCLUDE_COMMAND_USERDATA
+#    NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#    NK_INCLUDE_FIXED_TYPES
+#    NK_KEYSTATE_BASED_INPUT
+#
+#)
 
 # link all libraries to the project
 target_link_libraries(tiny_renderer PRIVATE SDL3::SDL3 m)

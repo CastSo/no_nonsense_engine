@@ -1,12 +1,14 @@
 #include "image_view.h"
 #include "render.h"
 #include "model.h"
-
+#include "nuklear.h"
+// #include "nuklear_sdl3_renderer.h"
+// #include "nuklear_def.h"
 
    
 int main(int argc, char** argv) {
-    int SCR_WIDTH = 800;
-    int SCR_HEIGHT = 800;
+    int SCR_WIDTH = 1000;
+    int SCR_HEIGHT = 1000;
 
     int mouse_x = 0;
 	int mouse_y = 0;
@@ -27,13 +29,24 @@ int main(int argc, char** argv) {
 
     bool run = true;
     
-    vector3f cam_eye = {1, 0, 4};
+    vector3f cam_pos = {0, 0, 6};
     vector3f cam_direction = {0, 0, 0};
     vector3f cam_up = {0, 1, 0};
-        
+    
+    Shader *obj_model = malloc(sizeof(Shader));
+    obj_model->model = read_model_lines("./src/models/african_head.obj");
+    obj_model->model->color = (vector4f) {255.0f, 255.0f, 255.0f, 255.0f};
+    obj_model->model->scale = 0.5f;
+
+    obj_model->ModelView = lookat(cam_pos, cam_direction, cam_up);
+    obj_model->Perspective = perspective(norm(subtract_vec3(cam_pos, cam_direction)));
+    obj_model->Viewport = viewport(SCR_WIDTH/16.f, SCR_HEIGHT/16.f, SCR_WIDTH*7.f/8.f, SCR_HEIGHT*7.f/8.f);
+
+
     Shader *cube = malloc(sizeof(Shader));
     cube->model = malloc(sizeof(Model));
-
+    cube->model->color = (vector4f) {75.0f, 255.0f, 75.0f, 255.0f};
+    cube->model->scale = 0.2f;
     int vert_count = 36;
     double vertices[108] ={
         -0.5f, -0.5f, -0.5f,  
@@ -76,7 +89,7 @@ int main(int argc, char** argv) {
          0.5f,  0.5f,  0.5f,  
          0.5f,  0.5f,  0.5f,  
         -0.5f,  0.5f,  0.5f,  
-        -0.5f,  0.5f, -0.5f,  
+        -0.5f,  0.5f, -0.5f
     };
     cube->model->vertices = malloc(vert_count * sizeof(vector3f));
     int v_i = 0;
@@ -91,24 +104,22 @@ int main(int argc, char** argv) {
 
     }
 
-    cube->model->vertices_size = vert_count;
-    cube->model->normals = find_normals(cube->model->vertices, cube->model->vertices_size, cube->model->triangles, cube->model->triangles_size);
 
+     cube->model->vertices_size = vert_count;
     cube->model->norm_size = vert_count;
 
     //vert indices
-    int triangles[36];
+    cube->model->triangles = malloc(36 * sizeof(int));
     for(int i = 0; i < 36; i++) {
-        triangles[i] = i;
+        cube->model->triangles[i] = i;
     }
 
-    cube->model->triangles = triangles;
+    
     cube->model->triangles_size = 36;
+    cube->model->normals = find_normals(cube->model->vertices, cube->model->vertices_size, cube->model->triangles, cube->model->triangles_size);
 
-    //cube->model->textures = malloc(100000 * sizeof(vector3f));
-
-    cube->ModelView = lookat(cam_eye, cam_direction, cam_up);
-    cube->Perspective = perspective(norm(subtract_vec3(cam_eye, cam_direction)));
+    cube->ModelView = lookat(cam_pos, cam_direction, cam_up);
+    cube->Perspective = perspective(norm(subtract_vec3(cam_pos, cam_direction)));
 
     cube->Viewport = viewport(SCR_WIDTH/16.f, SCR_HEIGHT/16.f, SCR_WIDTH*7.f/8.f, SCR_HEIGHT*7.f/8.f);
 
@@ -123,13 +134,32 @@ int main(int argc, char** argv) {
     Uint64 last_time;
     double dt = 0;
 
-    int angle =0;
+    cube->model->angle =0;
+    float move = 0.05f;
+
+    // init gui state
+    enum {EASY, HARD};
+    static int op = EASY;
+    static float value = 0.6f;
+    static int i =  20;
+    struct nk_context *ctx;
+    
+
+   
+    // nk_end(&ctx);
+    //     if (nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 250),
+    //     NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+    //     NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE)) {
+
+    //     }
+
     while (run) {
+        
         SDL_Event event;
         last_time = current_time;
         current_time = SDL_GetPerformanceCounter();
         
-        dt = (double)((current_time - last_time)*50 / (double)SDL_GetPerformanceFrequency());
+        dt = (double)((current_time - last_time)*25 / (double)SDL_GetPerformanceFrequency());
 
         while(SDL_PollEvent(&event)) {
             switch (event.type){
@@ -186,12 +216,20 @@ int main(int argc, char** argv) {
         //Set background color
         clear(&color_buffer, &backgroundColor);
 
-        angle += dt;
+        cube->model->angle += dt;
 
         //printf("%f \n", dt);
-        if(angle > 360)
-            angle = 0;
-        render_faces(cube, zbuffer, &color_buffer, angle);
+        if(move > 1.0f) 
+            move = -1.0f;
+
+
+        // render_faces(obj_model, zbuffer, &color_buffer, 0);
+        // //Reset the zbuffer
+        // for (int z = 0; z < zbuf_size; z++) {
+        //     zbuffer[z] = -DBL_MAX;
+        // }
+
+        render_faces(cube, zbuffer, &color_buffer, true, 0);
         //Reset the zbuffer
         for (int z = 0; z < zbuf_size; z++) {
             zbuffer[z] = -DBL_MAX;
@@ -215,13 +253,18 @@ int main(int argc, char** argv) {
 
     
     free(zbuffer);
-    //free(shader->model->triangles);
+    free(cube->model->triangles);
     free(cube->model->vertices);
     free(cube->model->normals);
-    //free(shader->model->textures);
     free(cube->model);
     free(cube);
-   // free(rand_colors);
+
+    free(obj_model->model->triangles);
+    free(obj_model->model->textures);
+    free(obj_model->model->vertices);
+    free(obj_model->model->normals);
+    free(obj_model->model);
+    free(obj_model);
 
 
     SDL_DestroySurface(draw_surface);
