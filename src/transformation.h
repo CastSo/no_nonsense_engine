@@ -34,7 +34,6 @@ typedef struct Light {
 typedef struct  Shader Shader;
 
 struct Shader {
-    Model *model;
     Camera *camera;
     Light *light;
     vector4f color;
@@ -47,7 +46,7 @@ struct Shader {
     matrix4f Viewport;
 
 };
-void pipe_vertex(Shader *shader, int face, int vert, float move);
+void pipe_vertex(Shader *shader, Model *model, int face, int vert, float move);
 
 void project(vector3f *v, int width, int height);
 

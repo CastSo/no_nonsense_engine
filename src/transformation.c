@@ -1,14 +1,14 @@
 #include "transformation.h"
 
 
- void pipe_vertex(Shader *shader, int face, int vert, float move) {
-    vector3f scaling = (vector3f) {shader->model->scale, shader->model->scale, shader->model->scale};
-    vector3f v = shader->model->vertices[shader->model->triangles[face+vert]];
-    //vector3f t = shader->model->textures[shader->model->triangles[face+vert]-1];
-    vector3f n = shader->model->normals[shader->model->triangles[face+vert]];
+ void pipe_vertex(Shader *shader, Model *model, int face, int vert, float move) {
+    vector3f scaling = (vector3f) {model->scale, model->scale, model->scale};
+    vector3f v = model->vertices[model->triangles[face+vert]];
+    //vector3f t = model->textures[model->triangles[face+vert]-1];
+    vector3f n = model->normals[model->triangles[face+vert]];
     vector4f position = multiply_mat4f_vec4f(shader->ModelView, (vector4f){v.x, v.y, v.z, 1.}); // in object coordinates
     shader->normal =  multiply_mat4f_vec4f(shader->ModelView, (vector4f){n.x, n.y, n.z, 0.}); 
-    //shader->texture =  multiply_mat4f_vec4f(shader->ModelView, (vector4f){t_norm.x, t_norm.y, t_norm.z, 0.}); 
+    //shader->texture =  multiply_mat4f_vec4f(modelView, (vector4f){t_norm.x, t_norm.y, t_norm.z, 0.}); 
     
     shader->eye = (vector4f){position.x, position.y, position.z, position.w}; //in eye coordinates
     shader->clip = multiply_mat4f_vec4f(shader->Perspective, position); // in clip coordinates
@@ -18,12 +18,12 @@
     shader->normal = scale(shader->normal, scaling);
     shader->eye = scale(shader->eye, scaling);
     shader->clip = scale(shader->clip,scaling);
-    shader->normal = rotateY(shader->normal, shader->model->angle);
-    shader->eye = rotateY(shader->eye, shader->model->angle);
-    shader->clip = rotateY(shader->clip, shader->model->angle);
-    shader->normal = rotateX(shader->normal, shader->model->angle);
-    shader->eye = rotateX(shader->eye, shader->model->angle);
-    shader->clip = rotateX(shader->clip, shader->model->angle);
+    shader->normal = rotateY(shader->normal, model->angle);
+    shader->eye = rotateY(shader->eye, model->angle);
+    shader->clip = rotateY(shader->clip, model->angle);
+    shader->normal = rotateX(shader->normal, model->angle);
+    shader->eye = rotateX(shader->eye, model->angle);
+    shader->clip = rotateX(shader->clip, model->angle);
     
     shader->clip = translate(shader->clip, (vector3f){0.0f, move, 0.0f});
     shader->eye = translate(shader->eye, (vector3f){0.0f, move, 0.0f});

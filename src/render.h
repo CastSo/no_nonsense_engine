@@ -11,7 +11,7 @@ void triangle_scanline(int ax, int ay, int bx, int by, int cx, int cy, image_vie
 void triangle(matrix4f viewport, double *zbuffer, Camera *camera, Light *light, vector4f normal[3],  vector4f eye[3], vector4f clip[3], vector4f color, image_view *color_buffer,  bool is_backface_cull);
 
 struct Model* read_model_lines(char *file_name);
-void render_faces(Shader *shader, double *zbuffer, image_view* color_buffer,  bool is_bf_cull, float move);
+void render_faces(Shader *shader, Model *model, double *zbuffer, image_view* color_buffer,  bool is_bf_cull, float move);
 void render_wireframe(Model* model, image_view* color_buffer);
 
 

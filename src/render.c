@@ -17,9 +17,9 @@ vector3f convert_to_ndc(vector3f vec, int width, int height) {
 }
 
 
-void render_faces(Shader *shader, double *zbuffer, image_view* color_buffer, bool is_bf_cull, float move) {
+void render_faces(Shader *shader, Model *model, double *zbuffer, image_view* color_buffer, bool is_bf_cull, float move) {
 
-    for (int v = 0; v < (shader->model->triangles_size); v += 3) {
+    for (int v = 0; v < (model->triangles_size); v += 3) {
       
         vector4f clip[3];
         vector4f eye[3];
@@ -28,13 +28,13 @@ void render_faces(Shader *shader, double *zbuffer, image_view* color_buffer, boo
 
         for (int f = 0; f < 3; f++) {
 
-            pipe_vertex(shader, f, v, move);
+            pipe_vertex(shader, model, f, v, move);
             clip[f] = shader->clip;
             eye[f] = shader->eye;
             normal[f] = shader->normal;
         }
         
-       triangle(shader->Viewport, zbuffer, shader->camera, shader->light, normal, eye, clip, shader->model->color, color_buffer, is_bf_cull);
+       triangle(shader->Viewport, zbuffer, shader->camera, shader->light, normal, eye, clip, model->color, color_buffer, is_bf_cull);
     }
     
 }
