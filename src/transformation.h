@@ -13,18 +13,30 @@ typedef struct Model {
     int triangles_size;
     int norm_size;
     int texture_size;
-
     vector4f color;
 
     float angle;
     float scale;
 }Model;
 
+typedef struct Camera {
+    vector3f position;
+    vector3f direction;
+    vector3f up;
+} Camera;
+
+typedef struct Light {
+    vector3f position;
+    vector3f direction;
+} Light;
+
 
 typedef struct  Shader Shader;
 
 struct Shader {
     Model *model;
+    Camera *camera;
+    Light *light;
     vector4f color;
     vector4f eye;
     vector4f clip;

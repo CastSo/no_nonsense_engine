@@ -1,5 +1,7 @@
 # Tiny Renderer
 A CPU-based software rasterizer, built to study graphics API like OpenGL. Under the guidances of primarily, the ["Tiny Renderer" articles][1]. 
+Dependencies: GTK 4.0+
+
 
 ## CMake build commands 
 

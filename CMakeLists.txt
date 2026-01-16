@@ -33,8 +33,6 @@ else()
     message(STATUS "Using local SDL3")
 endif()
 
-find_package(OpenGL REQUIRED)
-
 
 add_executable(tiny_renderer WIN32 
    ./src/config.h
@@ -47,8 +45,6 @@ add_executable(tiny_renderer WIN32
    ./src/render.c
    ./src/util/util.c
    ./src/component.h
-   ./dependencies/microui/microui.c
-    ./dependencies/microui/microui_renderer.c
     ${IMGUI_SOURCES}
     )
 
@@ -58,7 +54,7 @@ set_target_properties(tiny_renderer PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_
 # set the include directory
 target_include_directories(tiny_renderer PUBLIC 
     src 
-    dependencies/microui)
+    dependencies)
 
 
 
@@ -67,7 +63,7 @@ target_compile_definitions(tiny_renderer PRIVATE CIMGUI_DEFINE_ENUMS_AND_STRUCTS
 target_link_libraries(tiny_renderer PRIVATE 
                                 m
                                 SDL3::SDL3
-                                OpenGL::GL)
+                                )
 
 target_compile_options(tiny_renderer  PRIVATE -fsanitize=address)
 target_link_options(tiny_renderer  PRIVATE -fsanitize=address)

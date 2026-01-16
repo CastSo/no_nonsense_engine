@@ -34,7 +34,7 @@ void render_faces(Shader *shader, double *zbuffer, image_view* color_buffer, boo
             normal[f] = shader->normal;
         }
         
-       triangle(shader->Viewport, zbuffer, normal, eye, clip, shader->model->color, color_buffer, is_bf_cull);
+       triangle(shader->Viewport, zbuffer, shader->camera, shader->light, normal, eye, clip, shader->model->color, color_buffer, is_bf_cull);
     }
     
 }
@@ -196,10 +196,10 @@ double signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy) {
 }
 
 //Uses bounding box rasterization
-void triangle(matrix4f viewport, double *zbuffer, vector4f normal[3], vector4f eye[3], vector4f clip[3], vector4f color, image_view *color_buffer, bool is_backface_cull) {
+void triangle(matrix4f viewport, double *zbuffer, Camera *camera, Light *light, vector4f normal[3], vector4f eye[3], vector4f clip[3], vector4f color, image_view *color_buffer, bool is_backface_cull) {
     
-    vector3f sun_pos = {2, 0, 0};
-    vector3f cam_pos = {0, 0, 6};
+    vector3f sun_direction = light->direction;
+    vector3f cam_pos = camera->position;
 
 
     vector4f ndc[3] = {
@@ -249,7 +249,7 @@ void triangle(matrix4f viewport, double *zbuffer, vector4f normal[3], vector4f e
 
             vector3f n = add_vec3(add_vec3(scale_vec3((vector3f){normal[0].x, normal[0].y, normal[0].z}, bc.x), scale_vec3((vector3f){normal[1].x, normal[1].y, normal[1].z},bc.y)), scale_vec3((vector3f){normal[2].x, normal[2].y, normal[2].z}, bc.z));
             vector3f vec_n = normalize(n);
-            vector3f vec_l = normalize(sun_pos); // direction toward sun
+            vector3f vec_l = normalize(sun_direction); // direction toward sun
             
             
             int e = 1;
