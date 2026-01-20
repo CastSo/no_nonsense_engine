@@ -22,19 +22,21 @@ void render_faces(Shader *shader, Model *model, double *zbuffer, image_view* col
     for (int v = 0; v < (model->triangles_size); v += 3) {
       
         vector4f clip[3];
-        vector4f eye[3];
-        vector4f normal[3];
-
+        vector3f varying_uv[3];
 
         for (int f = 0; f < 3; f++) {
+            vector3f vec = model->vertices[model->triangles[f+v]];
+            vector4f position = multiply_mat4f_vec4f(shader->ModelView, (vector4f){vec.x, vec.y, vec.z, 1.});
+            clip[f] = multiply_mat4f_vec4f(shader->Perspective, position); // in clip coordinates
+            
+            //Uses vt from model
+            varying_uv[f] = model->textures[model->triangles[f+v]];
 
-            pipe_vertex(shader, model, f, v, move);
-            clip[f] = shader->clip;
-            eye[f] = shader->eye;
-            normal[f] = shader->normal;
+            //printf("%f, %f, %f\n", varying_uv[f].x, varying_uv[f].y, varying_uv[f].z);
         }
+
         
-       triangle(shader->Viewport, zbuffer, shader->camera, shader->light, normal, eye, clip, model->color, color_buffer, is_bf_cull);
+      triangle(shader, model, zbuffer, clip, varying_uv, color_buffer, is_bf_cull);
     }
     
 }
@@ -196,10 +198,10 @@ double signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy) {
 }
 
 //Uses bounding box rasterization
-void triangle(matrix4f viewport, double *zbuffer, Camera *camera, Light *light, vector4f normal[3], vector4f eye[3], vector4f clip[3], vector4f color, image_view *color_buffer, bool is_backface_cull) {
+void triangle(Shader *shader,  Model *model, double *zbuffer, vector4f clip[3], vector3f varying_uv[3],  image_view *color_buffer, bool is_backface_cull) {
     
-    vector3f sun_direction = light->direction;
-    vector3f cam_pos = camera->position;
+    vector3f sun_direction = shader->light->direction;
+    vector3f cam_pos = shader->camera->position;
 
 
     vector4f ndc[3] = {
@@ -209,9 +211,9 @@ void triangle(matrix4f viewport, double *zbuffer, Camera *camera, Light *light, 
     };
 
     vector4f screen[3] = {
-        multiply_mat4f_vec4f(viewport, ndc[0]), 
-        multiply_mat4f_vec4f(viewport, ndc[1]), 
-        multiply_mat4f_vec4f(viewport, ndc[2])};
+        multiply_mat4f_vec4f(shader->Viewport, ndc[0]), 
+        multiply_mat4f_vec4f(shader->Viewport, ndc[1]), 
+        multiply_mat4f_vec4f(shader->Viewport, ndc[2])};
     
     //Triangle ABC in screen coordinates   
     matrix3f ABC = {
@@ -233,33 +235,29 @@ void triangle(matrix4f viewport, double *zbuffer, Camera *camera, Light *light, 
    #pragma omp parallel for
     for (int x = fmax(bbminx, 0); x <= fmin(bbmaxx, color_buffer->width-1); x++) {
         for (int y = fmax(bbminy,0); y <= fmin(bbmaxy, color_buffer->height-1); y++) {
-
+            
             //Barycentric coordinates
             vector3f bc = multiply_mat3f_vec3f((inverse(ABC)), (vector3f){(double)x, (double) y, 1.});
             //Checks if pixel outside triangle
             if (bc.x < 0 || bc.y < 0 || bc.z < 0) 
                 continue;
-            // double alpha = signed_triangle_area(x, y, screen[1].x, screen[1].y, screen[2].x, screen[2].y) / total_area;
-            // double beta  = signed_triangle_area(x, y, screen[2].x, screen[2].y, screen[0].x, screen[0].y) / total_area;
-            // double gamma = signed_triangle_area(x, y, screen[0].x, screen[0].y, screen[1].x, screen[1].y) / total_area;
 
-            vector3f AB = subtract_vec3((vector3f){normal[0].x, normal[0].y, normal[0].z}, (vector3f){normal[1].x, normal[1].y, normal[1].z});
-            vector3f AC = subtract_vec3((vector3f){normal[0].x, normal[0].y, normal[0].z}, (vector3f){normal[2].x, normal[2].y, normal[2].z});
+            vector3f uv = add_vec3f(add_vec3f(scale_vec3f(varying_uv[0], bc.x), scale_vec3f(varying_uv[1], bc.y)), scale_vec3f(varying_uv[2], bc.z));
 
-
-            vector3f n = add_vec3(add_vec3(scale_vec3((vector3f){normal[0].x, normal[0].y, normal[0].z}, bc.x), scale_vec3((vector3f){normal[1].x, normal[1].y, normal[1].z},bc.y)), scale_vec3((vector3f){normal[2].x, normal[2].y, normal[2].z}, bc.z));
-            vector3f vec_n = normalize(n);
-            vector3f vec_l = normalize(sun_direction); // direction toward sun
+            vector4f n = multiply_mat4f_vec4f(shader->ModelView, normal(*model, (vector2f){uv.x, uv.y}));
+            //vector4f n = (vector4f){uv.x, uv.y, 0.0f, 0.0f};
+            vector4f vec_n = normalize_vec4f(n);
+            vector4f vec_l = normalize_vec4f(multiply_mat4f_vec4f(shader->ModelView, (vector4f){sun_direction.x, sun_direction.y, sun_direction.z, 0.0f})); // direction toward sun
             
             
-            int e = 1;
-            vector3f vec_v = normalize(cam_pos); //fragment to sun
-            vector3f vec_r = subtract_vec3(scale_vec3(scale_vec3(vec_n,2), dot_vec3f(vec_n, vec_l)), vec_l); //reflection of sun
-            double specular = pow(fmax(0, dot_vec3f(vec_r, vec_v)), e); 
+            int e = 35;
+            vector4f vec_v = normalize_vec4f((vector4f){cam_pos.x, cam_pos.y, cam_pos.z, 0.0f}); //fragment to sun
+            //vector4f vec_r = (subtract_vec4f(scale_vec4f(scale_vec4f(vec_n,2), dot_vec4f(vec_n, vec_l)), vec_l)); //reflection of sun
+            vector4f vec_r = normalize_vec4f(subtract_vec4f(scale_vec4f(scale_vec4f(vec_n, dot_vec4f(vec_n, vec_l)), 2), vec_l)); //reflection of sun
+            double specular = pow(fmax(0, dot_vec4f(vec_r, vec_v)), e); 
+            double diff = fmax(0, dot_vec4f(vec_n, vec_l));
+            double ambient = .3;
 
-            
-    
-            
             double z = dot_vec3f(bc, (vector3f){ndc[0].z, ndc[1].z, ndc[2].z});
             //Discard pixel p because inferior to z;
             if (z <= zbuffer[x+y*color_buffer->width])
@@ -267,11 +265,13 @@ void triangle(matrix4f viewport, double *zbuffer, Camera *camera, Light *light, 
 
             zbuffer[x+y*color_buffer->width] = z;
 
+             //y growing downward
             int normal_y = color_buffer->width-y-1;
             
+            double phong = fmin(1, (ambient + .4*diff + .9*specular));
 
-            //y growing downward
-            *color_buffer->at(color_buffer, x, normal_y) = (color4ub) { specular* color.x , specular * color.y, specular * color.z, color.w};
+           
+            *color_buffer->at(color_buffer, x, normal_y) = (color4ub) {phong * model->color.x , phong * model->color.y, phong * model->color.z,  model->color.w};
             
         }
     }

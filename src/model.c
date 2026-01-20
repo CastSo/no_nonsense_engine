@@ -139,23 +139,19 @@ struct Model* read_model_lines(char *file_name) {
 
             char *endptr;
             double x = strtod(line, &endptr);
-            model->textures[norm_i].x = x;
+            model->textures[texture_i].x = x;
             
             line = strtok_r(NULL, delim, &saveptr1);
             
             endptr = NULL;
             double y = strtod(line, &endptr);
-            model->textures[norm_i].y = y;
+            model->textures[texture_i].y = y;
             line = strtok_r(NULL, delim, &saveptr1);
-
-            if(line == NULL){
-                continue;
-            }
 
             endptr = NULL;
-            model->textures[norm_i].z = strtod(line, &endptr);
+            model->textures[texture_i].z = strtod(line, &endptr);
             line = strtok_r(NULL, delim, &saveptr1);
-           // printf("%f, %f, %f\n",  model->textures[texture_i].x, model->textures[texture_i].y, model->textures[texture_i].z);        
+            //printf("%f, %f, %f\n",  model->textures[texture_i].x, model->textures[texture_i].y, model->textures[texture_i].z);        
             texture_i++;
 
         }  
@@ -173,4 +169,16 @@ struct Model* read_model_lines(char *file_name) {
 
     
     return model;
+}
+
+vector4f normal(Model self, vector2f uv) {
+    //(row*height)+column
+    //Finds coordinates from uv image
+    int i = (uv.x * self.tga_header->width) + (uv.y * self.tga_header->height);
+    vector4f color;
+
+    //From 2D image
+    color = (vector4f){self.uv[i].r, self.uv[i].g, self.uv[i].b,  self.uv[i].a};
+   
+    return subtract_vec4f(scale_vec4f(color, 2./255.), (vector4f){1, 1, 1, 0});
 }

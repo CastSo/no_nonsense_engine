@@ -44,8 +44,7 @@ add_executable(tiny_renderer WIN32
    ./src/image_view.c
    ./src/render.c
    ./src/util/util.c
-   ./src/component.h
-    ${IMGUI_SOURCES}
+   ./src/tga_image.c
     )
 
 set_target_properties(tiny_renderer PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

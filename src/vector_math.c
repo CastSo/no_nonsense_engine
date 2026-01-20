@@ -1,8 +1,13 @@
 #include "vector_math.h"
 
-vector3f scale_vec3(vector3f v, float s) {
+vector3f scale_vec3f(vector3f v, float s) {
     return (vector3f){s * v.x, s * v.y, s * v.z};
 }
+
+vector4f scale_vec4f(vector4f v, float s) {
+    return (vector4f){s * v.x, s * v.y, s * v.z, s * v.w};
+}
+
 
 double dot_vec2f(vector2f a, vector2f b) {
     return a.x * b.x + a.y * b.y;
@@ -16,16 +21,16 @@ double dot_vec4f(vector4f a, vector4f b) {
     return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 }
 
-double norm_vec3f(vector3f v) {
-    return sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
-}
-
-vector3f add_vec3(vector3f a, vector3f b) {
+vector3f add_vec3f(vector3f a, vector3f b) {
     return (vector3f){a.x + b.x, a.y + b.y, a.z + b.z}; 
 }
 
 vector3f subtract_vec3(vector3f a, vector3f b) {
     return (vector3f){a.x - b.x, a.y - b.y, a.z - b.z}; 
+}
+
+vector4f subtract_vec4f(vector4f a, vector4f b) {
+    return (vector4f){a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w}; 
 }
 
 
@@ -111,13 +116,18 @@ double determinant(matrix3f m) {
             
 }
 
-double norm(vector3f v) {
+double norm_vec3f(vector3f v) {
     return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 }
 
-vector3f normalize(vector3f v) {
-    return (vector3f){v.x/norm(v), v.y/norm(v), v.z/norm(v)};
+vector3f normalize_vec3f(vector3f v) {
+    return (vector3f){v.x/norm_vec3f(v), v.y/norm_vec3f(v), v.z/norm_vec3f(v)};
 }
 
-
+double norm_vec4f(vector4f v) {
+    return sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
+}
+vector4f normalize_vec4f(vector4f v) {
+    return (vector4f){v.x/norm_vec4f(v), v.y/norm_vec4f(v), v.z/norm_vec4f(v), v.w/norm_vec4f(v)};
+}
 

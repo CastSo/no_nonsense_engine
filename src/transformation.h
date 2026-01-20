@@ -4,20 +4,6 @@
 #include "vector_math.h"
 #define _USE_MATH_DEFINES
 
-typedef struct Model {
-    int* triangles;
-    struct vector3f* vertices;
-    struct vector3f* normals;
-    struct vector3f* textures;
-    int vertices_size;
-    int triangles_size;
-    int norm_size;
-    int texture_size;
-    vector4f color;
-
-    float angle;
-    float scale;
-}Model;
 
 typedef struct Camera {
     vector3f position;
@@ -37,16 +23,12 @@ struct Shader {
     Camera *camera;
     Light *light;
     vector4f color;
-    vector4f eye;
-    vector4f clip;
-    vector4f normal;
-    vector4f texture;
     matrix4f ModelView;
     matrix4f Perspective;
     matrix4f Viewport;
 
 };
-void pipe_vertex(Shader *shader, Model *model, int face, int vert, float move);
+
 
 void project(vector3f *v, int width, int height);
 

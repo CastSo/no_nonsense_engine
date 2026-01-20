@@ -1,13 +1,14 @@
 #include "image_view.h"
 #include "render.h"
 #include "model.h"
+#include "tga_image.h"
 
 
 int main(int argc, char **argv)
 {
 
-    int SCR_WIDTH = 800;
-    int SCR_HEIGHT = 800;
+    int SCR_WIDTH = 1000;
+    int SCR_HEIGHT = 1000;
 
     int mouse_x = 0;
     int mouse_y = 0;
@@ -35,17 +36,17 @@ int main(int argc, char **argv)
     shader->light->direction = (vector3f){0, 1, 0};
     
 
-    Model *obj_model  = read_model_lines("./src/models/diablo3_pose.obj");
+    Model *obj_model  = read_model_lines("./src/models/african_head.obj");
     obj_model->color = (vector4f){255.0f, 255.0f, 255.0f, 255.0f};
-    obj_model->scale = 0.5f;
+    //obj_model->scale = 0.5f;
 
-    shader->ModelView = lookat(shader->camera->position, add_vec3(shader->camera->direction,shader->camera->position),shader->camera->up);
-    shader->Perspective = perspective(norm(subtract_vec3(shader->camera->position,shader->camera->direction)));
+    shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction,shader->camera->position),shader->camera->up);
+    shader->Perspective = perspective(norm_vec3f(subtract_vec3(shader->camera->position,shader->camera->direction)));
     shader->Viewport = viewport(SCR_WIDTH / 16.f, SCR_HEIGHT / 16.f, SCR_WIDTH * 7.f / 8.f, SCR_HEIGHT * 7.f / 8.f);
 
     Model *cube = malloc(sizeof(Model));
     cube->color = (vector4f){75.0f, 255.0f, 75.0f, 255.0f};
-    cube->scale = 0.2f;
+    //cube->scale = 0.2f;
     int vert_count = 24;
 
     //Uses counter-clockwise winding like OpenGL
@@ -133,6 +134,15 @@ int main(int argc, char **argv)
     float move = 0.05f;
 
     float cam_speed = 0.0;
+
+
+    image_view *color_buffer = malloc(sizeof(image_view));
+    color_buffer->width = SCR_WIDTH;
+    color_buffer->height = SCR_HEIGHT;
+    
+    obj_model->tga_header = malloc(sizeof(TGAHeader));
+    obj_model->uv = load_tga("./src/models/african_head_nm.tga", obj_model->tga_header);
+   
     while (run)
     {
         
@@ -179,26 +189,26 @@ int main(int argc, char **argv)
                     }
                     //Update cam position and game objects modelview
                     if (event.key.key == SDLK_W) {
-                        shader->camera->position = add_vec3(scale_vec3(shader->camera->direction, cam_speed), shader->camera->position); 
-                        shader->ModelView = lookat(shader->camera->position, add_vec3(shader->camera->direction, shader->camera->position), shader->camera->up);
+                        shader->camera->position = add_vec3f(scale_vec3f(shader->camera->direction, cam_speed), shader->camera->position); 
+                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
                     }
                     if (event.key.key == SDLK_S) {
-                        shader->camera->position = subtract_vec3(shader->camera->position, scale_vec3(shader->camera->direction, cam_speed)); 
-                        shader->ModelView = lookat(shader->camera->position, add_vec3(shader->camera->direction, shader->camera->position), shader->camera->up);
+                        shader->camera->position = subtract_vec3(shader->camera->position, scale_vec3f(shader->camera->direction, cam_speed)); 
+                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
                     }
                     if (event.key.key == SDLK_A) {
-                        shader->camera->position = subtract_vec3(shader->camera->position, scale_vec3(normalize(cross(shader->camera->direction, shader->camera->up)), cam_speed));
-                        shader->ModelView = lookat(shader->camera->position, add_vec3(shader->camera->direction, shader->camera->position), shader->camera->up);
+                        shader->camera->position = subtract_vec3(shader->camera->position, scale_vec3f(normalize_vec3f(cross(shader->camera->direction, shader->camera->up)), cam_speed));
+                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
                     }
                     if (event.key.key == SDLK_D) {
-                        shader->camera->position = add_vec3(shader->camera->position, scale_vec3(normalize(cross(shader->camera->direction, shader->camera->up)), cam_speed));
-                        shader->ModelView = lookat(shader->camera->position, add_vec3(shader->camera->direction, shader->camera->position), shader->camera->up);
+                        shader->camera->position = add_vec3f(shader->camera->position, scale_vec3f(normalize_vec3f(cross(shader->camera->direction, shader->camera->up)), cam_speed));
+                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
                     }
 
 
                 }
                 break;
-            }
+            }    
         }
 
         if (!run)
@@ -212,34 +222,33 @@ int main(int argc, char **argv)
         }
 
         // Sets color buffer for screen
-        image_view color_buffer;
-        color_buffer.pixels = (color4ub *)draw_surface->pixels,
-        color_buffer.width = SCR_WIDTH;
-        color_buffer.height = SCR_HEIGHT;
+        
+        color_buffer->pixels = (color4ub *)draw_surface->pixels;
+
         vector4f backgroundColor = {0.7f, 1.0f, 1.0f, 1.0f};
 
         // Set background color
-        clear(&color_buffer, &backgroundColor);
+        clear(color_buffer, &backgroundColor);
 
-        color_buffer.at = image_view_at;
+        color_buffer->at = image_view_at;
 
         cube->angle = dt;
 
 
         //Update model view for transforming based on cam changes
-        render_faces(shader, obj_model, zbuffer, &color_buffer, true, 0);
+        render_faces(shader, obj_model, zbuffer, color_buffer, true, 0);
         for (int z = 0; z < zbuf_size; z++)
         {
             zbuffer[z] = -DBL_MAX;
         }
 
 
-        render_faces(shader, cube, zbuffer, &color_buffer, true, 0);
-        // Reset the zbuffer
-        for (int z = 0; z < zbuf_size; z++)
-        {
-            zbuffer[z] = -DBL_MAX;
-        }
+        // render_faces(shader, cube, zbuffer, color_buffer, true, 0);
+        // // Reset the zbuffer
+        // for (int z = 0; z < zbuf_size; z++)
+        // {
+        //     zbuffer[z] = -DBL_MAX;
+        // }
 
         SDL_Rect draw_rect;
         draw_rect.x = 0;
@@ -255,6 +264,8 @@ int main(int argc, char **argv)
 
 
     }
+    free(color_buffer);
+    free(obj_model->tga_header);
 
     free(zbuffer);
     free(shader->camera);
@@ -267,6 +278,7 @@ int main(int argc, char **argv)
     free(cube);
     
     free(obj_model->triangles);
+    free(obj_model->uv);
     free(obj_model->textures);
     free(obj_model->vertices);
     free(obj_model->normals);
