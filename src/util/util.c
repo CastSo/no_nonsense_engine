@@ -11,3 +11,12 @@ void swap_int(int *a, int *b) {
     *b = temp;
 }
 
+float clamp(float value, float min, float max) {
+    if (value < min) {
+        return min;
+    }
+    if (value > max) {
+        return max;
+    }
+    return value;
+}

@@ -230,12 +230,11 @@ void triangle(Shader *shader,  Model *model, double *zbuffer, vector4f clip[3], 
     int bbminy = fmin(fmin(screen[0].y, screen[1].y), screen[2].y);
     int bbmaxx = fmax(fmax(screen[0].x, screen[1].x), screen[2].x);
     int bbmaxy = fmax(fmax(screen[0].y, screen[1].y), screen[2].y);
-    double total_area = signed_triangle_area(screen[0].x, screen[0].y, screen[1].x, screen[1].y, screen[2].x, screen[2].y);
 
    #pragma omp parallel for
     for (int x = fmax(bbminx, 0); x <= fmin(bbmaxx, color_buffer->width-1); x++) {
         for (int y = fmax(bbminy,0); y <= fmin(bbmaxy, color_buffer->height-1); y++) {
-            
+            int normal_y = color_buffer->height-y-1;
             //Barycentric coordinates
             vector3f bc = multiply_mat3f_vec3f((inverse(ABC)), (vector3f){(double)x, (double) y, 1.});
             //Checks if pixel outside triangle
@@ -247,7 +246,7 @@ void triangle(Shader *shader,  Model *model, double *zbuffer, vector4f clip[3], 
             vector4f n = multiply_mat4f_vec4f(shader->ModelView, normal(*model, (vector2f){uv.x, uv.y}));
             //vector4f n = (vector4f){uv.x, uv.y, 0.0f, 0.0f};
             vector4f vec_n = normalize_vec4f(n);
-            vector4f vec_l = normalize_vec4f(multiply_mat4f_vec4f(shader->ModelView, (vector4f){sun_direction.x, sun_direction.y, sun_direction.z, 0.0f})); // direction toward sun
+            vector4f vec_l = normalize_vec4f( (vector4f){sun_direction.x, sun_direction.y, sun_direction.z, 0.0f}); // direction toward sun
             
             
             int e = 35;
@@ -259,17 +258,19 @@ void triangle(Shader *shader,  Model *model, double *zbuffer, vector4f clip[3], 
             double ambient = .3;
 
             double z = dot_vec3f(bc, (vector3f){ndc[0].z, ndc[1].z, ndc[2].z});
+             //y growing downward
+            
+
             //Discard pixel p because inferior to z;
-            if (z <= zbuffer[x+y*color_buffer->width])
+            if (z <= zbuffer[x+normal_y*color_buffer->width])
                 continue;
 
-            zbuffer[x+y*color_buffer->width] = z;
+            zbuffer[x+normal_y*color_buffer->width] = z;
 
-             //y growing downward
-            int normal_y = color_buffer->width-y-1;
+
             
-            double phong = fmin(1, (ambient + .4*diff + .9*specular));
-
+            double phong = ambient + .4*diff + .9*specular;
+            //printf("%f\n", phong);
            
             *color_buffer->at(color_buffer, x, normal_y) = (color4ub) {phong * model->color.x , phong * model->color.y, phong * model->color.z,  model->color.w};
             

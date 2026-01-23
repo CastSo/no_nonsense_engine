@@ -3,6 +3,7 @@
 #include "vector_math.h"
 #include "type.h"
 #include "tga_image.h"
+#include "util/util.h"
 
 typedef struct Model {
     TGAHeader *tga_header;

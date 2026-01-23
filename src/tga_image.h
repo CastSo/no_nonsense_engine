@@ -37,3 +37,5 @@ typedef struct TGAImage {
 int fget_little_short(FILE *f);
 
 color4ub* load_tga(char *file_name, TGAHeader *tga_header);
+void flip_horizontally(color4ub *pixbuf, int width, int height);
+void flip_vertically(color4ub *pixbuf, int width, int height);
