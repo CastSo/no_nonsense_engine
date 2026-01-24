@@ -7,8 +7,8 @@
 int main(int argc, char **argv)
 {
 
-    int SCR_WIDTH = 1000;
-    int SCR_HEIGHT = 1000;
+    int SCR_WIDTH = 1024;
+    int SCR_HEIGHT = 1024;
 
     int mouse_x = 0;
     int mouse_y = 0;
@@ -139,10 +139,16 @@ int main(int argc, char **argv)
     image_view *color_buffer = malloc(sizeof(image_view));
     color_buffer->width = SCR_WIDTH;
     color_buffer->height = SCR_HEIGHT;
+
     
     obj_model->tga_header = malloc(sizeof(TGAHeader));
     obj_model->uv = load_tga("./src/models/african_head_nm.tga", obj_model->tga_header);
-   
+
+    image_view *img_buffer = malloc(sizeof(image_view));
+    img_buffer->pixels = load_tga("./src/models/african_head_nm.tga", obj_model->tga_header);
+    img_buffer->width = SCR_WIDTH;
+    img_buffer->height = SCR_HEIGHT;
+  
     while (run)
     {
         
@@ -234,13 +240,13 @@ int main(int argc, char **argv)
 
         cube->angle = dt;
 
-
+        render_tga(color_buffer, img_buffer);
         //Update model view for transforming based on cam changes
-        render_faces(shader, obj_model, zbuffer, color_buffer, true, 0);
-        for (int z = 0; z < zbuf_size; z++)
-        {
-            zbuffer[z] = -DBL_MAX;
-        }
+        // render_faces(shader, obj_model, zbuffer, color_buffer, true, 0);
+        // for (int z = 0; z < zbuf_size; z++)
+        // {
+        //     zbuffer[z] = -DBL_MAX;
+        // }
 
 
         // render_faces(shader, cube, zbuffer, color_buffer, true, 0);
@@ -266,6 +272,9 @@ int main(int argc, char **argv)
     }
     free(color_buffer);
     free(obj_model->tga_header);
+
+    free(img_buffer->pixels);
+    free(img_buffer);
 
     free(zbuffer);
     free(shader->camera);

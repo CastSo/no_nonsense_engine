@@ -5,6 +5,8 @@
 #include "model.h"
 
 void clear(const image_view *color_buffer, const vector4f *color);
+void render_tga(image_view *color_buffer, image_view *img_buffer);
+
 void line(int ax, int ay, int bx, int by, image_view *color_buffer, vector4f *color);
 void sort_y_coordinates(vector3f* vector, int n);
 void triangle_scanline(int ax, int ay, int bx, int by, int cx, int cy, image_view *color_buffer, vector4f *color);

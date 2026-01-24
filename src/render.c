@@ -9,6 +9,16 @@ void clear(const image_view *color_buffer, const vector4f *color) {
     fill_n(ptr, &fill, size, sizeof(fill));
 }
 
+void render_tga(image_view *color_buffer, image_view *img_buffer) {
+    color4ub* ptr = color_buffer->pixels;
+    uint32_t size = color_buffer->width * color_buffer->height;
+    for(int i = 0; i < img_buffer->height; i++) {
+        for (int j = 0; j < img_buffer->width; j++) {
+            *color_buffer->at(color_buffer, j, i) = img_buffer->pixels[j + i * img_buffer->width];
+        }
+    }
+}
+
 
 vector3f convert_to_ndc(vector3f vec, int width, int height) {
     return (vector3f) { (1.0f + vec.x) * width/ 2,

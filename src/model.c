@@ -174,14 +174,18 @@ struct Model* read_model_lines(char *file_name) {
 vector4f normal(Model self, vector2f uv) {
     //(row*height)+column
     double x = uv.x * self.tga_header->width;
-    double y = (1-uv.y) * self.tga_header->height;
+    double y = (uv.y) * self.tga_header->height;
+
+    x = clamp(x, 0, self.tga_header->width-1);
+    y = clamp(y, 0, self.tga_header->height-1);
     //Finds coordinates from uv image
-    int i = (y * self.tga_header->height) + x;
+    int i = (y + self.tga_header->width) + x ;
     vector4f color;
 
     //From 2D image
     color = (vector4f){self.uv[i].r, self.uv[i].g, self.uv[i].b,  self.uv[i].a};
     color = subtract_vec4f(scale_vec4f(color, 2./255.), (vector4f){1, 1, 1, 0});
+
     //printf("%d: %d, %d, %d \n", i, color.x, color.y, color.z);
     return color;
 }
