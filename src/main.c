@@ -29,19 +29,19 @@ int main(int argc, char **argv)
 
     Shader *shader = malloc(sizeof(Shader));
     shader->camera = malloc(sizeof(Camera));
-    shader->camera->position = (vector3f){0, 0, 3};
+    shader->camera->position = (vector3f){0, 0, 2};
     shader->camera->direction = (vector3f){0, 0, -1};
     shader->camera->up = (vector3f){0, 1, 0};
     shader->light = malloc(sizeof(Light));
-    shader->light->direction = (vector3f){0, 1, 0};
+    shader->light->direction = (vector3f){1, 1, 1};
     
 
-    Model *obj_model  = read_model_lines("./src/models/diablo3_pose.obj");
+    Model *obj_model  = read_model_lines("./src/models/african_head.obj");
     obj_model->color = (vector4f){255.0f, 255.0f, 255.0f, 255.0f};
     //obj_model->scale = 0.5f;
 
     shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction,shader->camera->position),shader->camera->up);
-    shader->Perspective = perspective(norm_vec3f(subtract_vec3(shader->camera->position,shader->camera->direction)));
+    shader->Perspective = perspective(norm_vec3f(subtract_vec3f(shader->camera->position,shader->camera->direction)));
     shader->Viewport = viewport(SCR_WIDTH / 16.f, SCR_HEIGHT / 16.f, SCR_WIDTH * 7.f / 8.f, SCR_HEIGHT * 7.f / 8.f);
 
     Model *cube = malloc(sizeof(Model));
@@ -144,16 +144,15 @@ int main(int argc, char **argv)
     obj_model->header_uv = malloc(sizeof(TGAHeader));
     obj_model->header_diffuse = malloc(sizeof(TGAHeader));
     obj_model->header_specular = malloc(sizeof(TGAHeader));
-    obj_model->uv = load_tga("./src/models/diablo3_pose_nm.tga", obj_model->header_uv);
-    obj_model->diffuse = load_tga("./src/models/diablo3_pose_diffuse.tga", obj_model->header_diffuse);
-    obj_model->specular = load_tga("./src/models/diablo3_pose_spec.tga", obj_model->header_specular);
+    obj_model->uv = load_tga("./src/models/african_head_nm_tangent.tga", obj_model->header_uv);
+    obj_model->diffuse = load_tga("./src/models/african_head_diffuse.tga", obj_model->header_diffuse);
+    obj_model->specular = load_tga("./src/models/african_head_spec.tga", obj_model->header_specular);
     
-
-    // image_view *img_buffer = malloc(sizeof(image_view));
-    // img_buffer->pixels = load_tga("./src/models/diablo3_pose_nm.tga", obj_model->header_uv);
-    // img_buffer->width = SCR_WIDTH;
-    // img_buffer->height = SCR_HEIGHT;
-  
+    bool first_mouse = true;
+    float yaw   = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
+    float pitch =  0.0f;
+    float last_x =  800.0f / 2.0;
+    float last_y =  600.0 / 2.0;
     while (run)
     {
         
@@ -163,7 +162,7 @@ int main(int argc, char **argv)
 
         
         dt = (double)((current_time - last_time) * 10000 / (double)SDL_GetPerformanceFrequency());
-        cam_speed = 2.5f * dt;
+        cam_speed = 0.8f;
 
         while (SDL_PollEvent(&event))
         {
@@ -185,8 +184,39 @@ int main(int argc, char **argv)
                 run = false;
                 break;
             case SDL_EVENT_MOUSE_MOTION:
-                mouse_x = event.motion.x;
-                mouse_y = event.motion.y;
+                // float x_pos = event.motion.x;
+                // float y_pos = event.motion.y;
+                // //printf("%f, %f\n", x_pos, y_pos);
+                // if (first_mouse) {
+                //     last_x = x_pos;
+                //     last_y = y_pos;
+                //     first_mouse = false;
+                // }
+
+                // float x_offset = x_pos - last_x;
+                // float y_offset = last_y - y_pos;
+                // last_x = x_pos;
+                // last_y = y_pos;
+                
+                // float sensitivity = 0.0000001f;
+                // x_offset *= sensitivity;
+                // y_offset *= sensitivity;
+
+                // yaw += x_offset;
+                // pitch += y_offset;
+
+                // if (pitch > 89.0f)
+                //     pitch = 89.0f;
+                // if (pitch < -89.0f)
+                //     pitch = -89.0f;
+
+                // vector3f front;
+                // front.x = cosf(radian(yaw)) * cosf(radian(pitch));
+                // front.y = sinf(radian(pitch));
+                // front.x = sinf(radian(yaw)) * cosf(radian(pitch));
+                // shader->camera->direction = normalize_vec3f(front);
+                
+                
                 break;
             case SDL_EVENT_KEY_DOWN:
                 switch (event.type)
@@ -201,19 +231,19 @@ int main(int argc, char **argv)
                     //Update cam position and game objects modelview
                     if (event.key.key == SDLK_W) {
                         shader->camera->position = add_vec3f(scale_vec3f(shader->camera->direction, cam_speed), shader->camera->position); 
-                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
+                        
                     }
                     if (event.key.key == SDLK_S) {
-                        shader->camera->position = subtract_vec3(shader->camera->position, scale_vec3f(shader->camera->direction, cam_speed)); 
-                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
+                        shader->camera->position = subtract_vec3f(shader->camera->position, scale_vec3f(shader->camera->direction, cam_speed)); 
+                        
                     }
                     if (event.key.key == SDLK_A) {
-                        shader->camera->position = subtract_vec3(shader->camera->position, scale_vec3f(normalize_vec3f(cross(shader->camera->direction, shader->camera->up)), cam_speed));
-                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
+                        shader->camera->position = subtract_vec3f(shader->camera->position, scale_vec3f(normalize_vec3f(cross(shader->camera->direction, shader->camera->up)), cam_speed));
+                        
                     }
                     if (event.key.key == SDLK_D) {
                         shader->camera->position = add_vec3f(shader->camera->position, scale_vec3f(normalize_vec3f(cross(shader->camera->direction, shader->camera->up)), cam_speed));
-                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
+                        
                     }
 
 
@@ -236,14 +266,15 @@ int main(int argc, char **argv)
         
         color_buffer->pixels = (color4ub *)draw_surface->pixels;
 
-        vector4f backgroundColor = {0.7f, 1.0f, 1.0f, 1.0f};
+        //vector4f backgroundColor = {0.7f, 1.0f, 1.0f, 1.0f};
+        vector4f backgroundColor = {0.0f, 0.0f, 0.0f, 1.0f};
 
         // Set background color
         clear(color_buffer, &backgroundColor);
 
         color_buffer->at = image_view_at;
 
-        // obj_model->angle += 10;
+        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
 
         //Update model view for transforming based on cam changes
         render_faces(shader, obj_model, zbuffer, color_buffer, true, 0);

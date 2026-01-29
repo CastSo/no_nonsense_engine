@@ -11,20 +11,24 @@ double dot_vec3f(vector3f a, vector3f b);
 double dot_vec4f(vector4f a, vector4f b);
 
 vector3f add_vec3f(vector3f a, vector3f b);
-vector3f subtract_vec3(vector3f a, vector3f b);
+vector4f add_vec4f(vector4f a, vector4f b);
+vector3f subtract_vec3f(vector3f a, vector3f b);
 vector4f subtract_vec4f(vector4f a, vector4f b);
 
 
 matrix4f multiply_mat4f(matrix4f a, matrix4f b);
 vector3f multiply_mat3f_vec3f(matrix3f m, vector3f v);
 vector4f multiply_mat4f_vec4f(matrix4f m, vector4f v);
+matrix2x4f multiply_mat4f_mat2x4f(matrix2f a, matrix2x4f b);
 
 matrix3f transpose_mat3f(matrix3f m);
+matrix4f transpose_mat4f(matrix4f m);
 
 
 double determinant(matrix3f m);
 matrix3f inverse_mat3f(matrix3f m);
 matrix4f inverse_mat4f(matrix4f m);
+matrix2f inverse_mat2f(matrix2f m);
 vector3f cross(vector3f a, vector3f b);
 
 double norm_vec3f(vector3f v);

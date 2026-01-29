@@ -20,3 +20,7 @@ float clamp(float value, float min, float max) {
     }
     return value;
 }
+
+double radian(double d) {
+    return d * (M_PI/180);
+}

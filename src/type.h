@@ -37,6 +37,12 @@ typedef struct matrix4f {
           n30, n31, n32, n33;
 }matrix4f;
 
+typedef struct matrix2x4f {
+    double n00, n01, n02, n03,
+           n10, n11, n12, n13;
+}matrix2x4f;
+
+
 inline vector4f as_vector(const vector3f *v) {
     vector4f vector = {v->x, v->y, v->z, 0.0f}; 
     return vector;

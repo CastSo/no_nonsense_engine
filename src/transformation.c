@@ -27,7 +27,7 @@ matrix4f perspective(double f) {
 }
 
 matrix4f lookat(vector3f eye, vector3f center, vector3f up) {
-    vector3f n = normalize_vec3f(subtract_vec3(eye, center));
+    vector3f n = normalize_vec3f(subtract_vec3f(eye, center));
     vector3f l = normalize_vec3f(cross(up, n));
     vector3f m = normalize_vec3f(cross(n, (vector3f){1}));
     matrix4f mat1 = {l.x,l.y,l.z,0, m.x,m.y,m.z,0, n.x,n.y,n.z,0, 0,0,0,1};
@@ -38,9 +38,9 @@ matrix4f lookat(vector3f eye, vector3f center, vector3f up) {
 
 vector4f rotateY(vector4f v, double a) {
     
-    matrix4f mat =  {cos(a), 0, sin(a), 0,
+    matrix4f mat =  {cos(a), 0, -sin(a), 0,
                      0,  1, 0, 0,
-                    -sin(a), 0, cos(a), 0,
+                    sin(a), 0, cos(a), 0,
                      0, 0, 0, 1};
     return multiply_mat4f_vec4f(mat, v);
 
@@ -49,8 +49,8 @@ vector4f rotateY(vector4f v, double a) {
 vector4f rotateX(vector4f v, double a) {
     
     matrix4f mat =  {1, 0, 0, 0,
-                    0, cos(a), -sin(a), 0,
-                    0, sin(a), cos(a), 0,
+                    0, cos(a), sin(a), 0,
+                    0, -sin(a), cos(a), 0,
                     0, 0, 0, 1};
 
     return multiply_mat4f_vec4f(mat, v);
@@ -88,9 +88,9 @@ vector3f *find_normals(vector3f* v, int vertices_size, int* triangles, int trian
         vector3f b = v[triangles[i+1]];
         vector3f c = v[triangles[i+2]];
 
-        vector3f ab = subtract_vec3(a, b);
-        vector3f ac = subtract_vec3(a, c);
-        vector3f bc = subtract_vec3(b, c);
+        vector3f ab = subtract_vec3f(a, b);
+        vector3f ac = subtract_vec3f(a, c);
+        vector3f bc = subtract_vec3f(b, c);
         
         vector3f aN = cross(ab, ac);
         vector3f bN = cross (ab, bc);

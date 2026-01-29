@@ -25,8 +25,12 @@ vector3f add_vec3f(vector3f a, vector3f b) {
     return (vector3f){a.x + b.x, a.y + b.y, a.z + b.z}; 
 }
 
+vector4f add_vec4f(vector4f a, vector4f b) {
+    return (vector4f){a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w}; 
+}
 
-vector3f subtract_vec3(vector3f a, vector3f b) {
+
+vector3f subtract_vec3f(vector3f a, vector3f b) {
     return (vector3f){a.x - b.x, a.y - b.y, a.z - b.z}; 
 }
 
@@ -78,6 +82,12 @@ vector4f multiply_mat4f_vec4f(matrix4f m, vector4f v) {
         m.n30 * v.x + m.n31*v.y + m.n32 * v.z + m.n33 * v.w };
 }
 
+matrix2x4f multiply_mat4f_mat2x4f(matrix2f a, matrix2x4f b) {
+    return (matrix2x4f) {
+        a.n00 * b.n00 + a.n01 * b.n10, a.n00 * b.n01 + a.n01 * b.n11, a.n00 * b.n02 + a.n01 * b.n12, a.n00 * b.n03 + a.n01 * b.n13,
+        a.n10 * b.n00 + a.n11 * b.n10, a.n10 * b.n01 + a.n11 * b.n11, a.n10 * b.n02 + a.n11 * b.n12, a.n10 * b.n03 + a.n11 * b.n13,
+    };
+}
 
 vector3f cross(vector3f a, vector3f b) {
     return (vector3f) {a.y * b.z - a.z * b.y,
@@ -89,6 +99,13 @@ matrix3f transpose_mat3f(matrix3f m) {
     return (matrix3f) {m.n00, m.n10, m.n20,
                        m.n01, m.n11, m.n21,
                        m.n02, m.n12, m.n22};
+}
+
+matrix4f transpose_mat4f(matrix4f m) {
+    return (matrix4f) {m.n00, m.n10, m.n20, m.n30,
+                       m.n01, m.n11, m.n21, m.n31,
+                       m.n02, m.n12, m.n22, m.n32,
+                       m.n03, m.n13, m.n23, m.n33};
 }
 
 matrix3f inverse_mat3f(matrix3f m){
@@ -131,6 +148,13 @@ matrix4f inverse_mat4f(matrix4f m){
         0,0,0,1
      };
 
+}
+
+matrix2f inverse_mat2f(matrix2f m) {
+    double det = 1 / (m.n00 * m.n11 - m.n01 * m.n10);
+    
+    return (matrix2f) {m.n11/det, -m.n01/det,
+                        m.n10/det, -m.n00/det};
 }
 
 

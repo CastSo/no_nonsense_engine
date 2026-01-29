@@ -33,6 +33,7 @@ void render_faces(Shader *shader, Model *model, double *zbuffer, image_view* col
       
         vector4f clip[3];
         vector3f varying_uv[3];
+        vector4f norm[3];
 
         for (int f = 0; f < 3; f++) {
             vector3f vec = model->vertices[model->triangles[v+(f*3)]];
@@ -41,15 +42,14 @@ void render_faces(Shader *shader, Model *model, double *zbuffer, image_view* col
             
             //Uses vt from model
             varying_uv[f] = model->textures[model->triangles[v+(f*3+1)]];
-
+            vector3f n = model->textures[model->triangles[v+(f*3+2)]];
+            norm[f] = multiply_mat4f_vec4f(inverse_mat4f(shader->ModelView), (vector4f){n.x, n.y, n.z, 0});
             
         }
 
-        // if(v < 9)
-        //     printf("%d, %d, %d\n", model->triangles[v+(0*3)],model->triangles[v+(1*3)], model->triangles[v+(2*3)]);
-
         
-      triangle(shader, model, zbuffer, clip, varying_uv, color_buffer, is_bf_cull);
+
+        triangle(shader, model, zbuffer, clip, varying_uv, norm, color_buffer, is_bf_cull);
     }
     
 }
@@ -211,11 +211,8 @@ double signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy) {
 }
 
 //Uses bounding box rasterization
-void triangle(Shader *shader,  Model *model, double *zbuffer, vector4f clip[3], vector3f varying_uv[3],  image_view *color_buffer, bool is_backface_cull) {
-    for (int i = 0; i < 3; i++) {
-        clip[i] = rotateY(clip[i], model->angle);
+void triangle(Shader *shader,  Model *model, double *zbuffer, vector4f clip[3], vector3f varying_uv[3], vector4f norm[3], image_view *color_buffer, bool is_backface_cull) {
 
-    }
     vector3f sun_direction = shader->light->direction;
     vector3f cam_pos = shader->camera->position;
 
@@ -267,12 +264,31 @@ void triangle(Shader *shader,  Model *model, double *zbuffer, vector4f clip[3], 
 
             zbuffer[x+normal_y*color_buffer->width] = z;
 
+            //Setup normals in tangent space
+            vector4f e1 = subtract_vec4f(clip[1], clip[0]);
+            vector4f e0 = subtract_vec4f(clip[2], clip[0]);
+            matrix2x4f E = {e0.x, e0.y, e0.z, 0.f, 
+                            e1.x, e1.y, e1.z, 0.f};
+            vector3f u0 = subtract_vec3f(varying_uv[1], varying_uv[0]);
+            vector3f u1 = subtract_vec3f(varying_uv[2], varying_uv[0]);
+            matrix2f U = {u0.x, u0.y,
+                        u1.x, u1.y};
+            matrix2f invert_U = inverse_mat2f(U);
+            matrix2x4f T = multiply_mat4f_mat2x4f(invert_U, E);
+            
+            vector4f interpolated_norm =  normalize_vec4f(add_vec4f(add_vec4f(scale_vec4f(norm[0], bc.x), scale_vec4f(norm[1],bc.y)), scale_vec4f(norm[2],bc.z)));
+            matrix4f D = {T.n00, T.n01, T.n02, T.n03, // tangent vector
+                         T.n10, T.n11, T.n12, T.n13, //bitangent vector
+                        interpolated_norm.x, interpolated_norm.y, interpolated_norm.z, interpolated_norm.w,
+                        0, 0, 0, 1
+                        };
+                        
             vector3f uv = add_vec3f(add_vec3f(scale_vec3f(varying_uv[0], bc.x), scale_vec3f(varying_uv[1], bc.y)), scale_vec3f(varying_uv[2], bc.z));
 
 
             vector4f nm = normal(model->header_uv, model->uv, (vector2f){uv.x, uv.y});
             
-            vector4f vec_n_nm = normalize_vec4f(multiply_mat4f_vec4f(inverse_mat4f(shader->ModelView), nm));
+            vector4f vec_n_nm = normalize_vec4f(multiply_mat4f_vec4f(transpose_mat4f(D), nm));
 
             vector4f vec_l = normalize_vec4f( (vector4f){sun_direction.x, sun_direction.y, sun_direction.z, 0.0f}); // direction toward sun
             
