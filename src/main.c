@@ -4,6 +4,38 @@
 #include "tga_image.h"
 
 
+static  char logbuf[64000];
+static   int logbuf_updated = 0;
+
+static const char button_map[256] = {
+  [ SDL_BUTTON_LEFT   & 0xff ] =  MU_MOUSE_LEFT,
+  [ SDL_BUTTON_RIGHT  & 0xff ] =  MU_MOUSE_RIGHT,
+  [ SDL_BUTTON_MIDDLE & 0xff ] =  MU_MOUSE_MIDDLE,
+};
+
+int text_width(mu_Font font, const char *text, int len) {
+    int res = 0;
+    for (const char *p = text; *p && len--; p++) {
+        if ((*p & 0xc0) == 0x80) { continue; }
+            int chr = mu_min((unsigned char) *p, 127);
+            res += atlas[ATLAS_FONT + chr].w;
+        }
+    return res;
+}
+
+int text_height(mu_Font font) {
+    return 18;
+}
+
+static void write_log(const char *text) {
+  if (logbuf[0]) { strcat(logbuf, "\n"); }
+  strcat(logbuf, text);
+  logbuf_updated = 1;
+}
+
+
+
+
 int main(int argc, char **argv)
 {
 
@@ -36,7 +68,7 @@ int main(int argc, char **argv)
     shader->light->direction = (vector3f){1, 1, 1};
     
 
-    Model *obj_model  = read_model_lines("./src/models/african_head.obj");
+    Model *obj_model  = read_model_lines("./src/models/diablo3_pose.obj");
     obj_model->color = (vector4f){255.0f, 255.0f, 255.0f, 255.0f};
     //obj_model->scale = 0.5f;
 
@@ -144,15 +176,22 @@ int main(int argc, char **argv)
     obj_model->header_uv = malloc(sizeof(TGAHeader));
     obj_model->header_diffuse = malloc(sizeof(TGAHeader));
     obj_model->header_specular = malloc(sizeof(TGAHeader));
-    obj_model->uv = load_tga("./src/models/african_head_nm_tangent.tga", obj_model->header_uv);
-    obj_model->diffuse = load_tga("./src/models/african_head_diffuse.tga", obj_model->header_diffuse);
-    obj_model->specular = load_tga("./src/models/african_head_spec.tga", obj_model->header_specular);
+    obj_model->uv = load_tga("./src/models/diablo3_pose_nm_tangent.tga", obj_model->header_uv);
+    obj_model->diffuse = load_tga("./src/models/diablo3_pose_diffuse.tga", obj_model->header_diffuse);
+    obj_model->specular = load_tga("./src/models/diablo3_pose_spec.tga", obj_model->header_specular);
     
     bool first_mouse = true;
     float yaw   = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
     float pitch =  0.0f;
     float last_x =  800.0f / 2.0;
     float last_y =  600.0 / 2.0;
+
+    mu_Context *ctx = malloc(sizeof(mu_Context));
+    mu_init(ctx);
+    ctx->text_width = text_width;
+    ctx->text_height = text_height;
+
+
     while (run)
     {
         
@@ -183,41 +222,17 @@ int main(int argc, char **argv)
             case SDL_EVENT_QUIT:
                 run = false;
                 break;
-            case SDL_EVENT_MOUSE_MOTION:
-                // float x_pos = event.motion.x;
-                // float y_pos = event.motion.y;
-                // //printf("%f, %f\n", x_pos, y_pos);
-                // if (first_mouse) {
-                //     last_x = x_pos;
-                //     last_y = y_pos;
-                //     first_mouse = false;
-                // }
+            case SDL_EVENT_MOUSE_MOTION: mu_input_mousemove(ctx, event.motion.x, event.motion.y); break;
+            case SDL_EVENT_MOUSE_WHEEL: mu_input_scroll(ctx, 0, event.wheel.y * -30); break;
+            case SDL_EVENT_TEXT_INPUT: mu_input_text(ctx, event.text.text); break;
 
-                // float x_offset = x_pos - last_x;
-                // float y_offset = last_y - y_pos;
-                // last_x = x_pos;
-                // last_y = y_pos;
-                
-                // float sensitivity = 0.0000001f;
-                // x_offset *= sensitivity;
-                // y_offset *= sensitivity;
-
-                // yaw += x_offset;
-                // pitch += y_offset;
-
-                // if (pitch > 89.0f)
-                //     pitch = 89.0f;
-                // if (pitch < -89.0f)
-                //     pitch = -89.0f;
-
-                // vector3f front;
-                // front.x = cosf(radian(yaw)) * cosf(radian(pitch));
-                // front.y = sinf(radian(pitch));
-                // front.x = sinf(radian(yaw)) * cosf(radian(pitch));
-                // shader->camera->direction = normalize_vec3f(front);
-                
-                
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            case SDL_EVENT_MOUSE_BUTTON_UP: {
+                int b = button_map[event.button.button & 0xff];
+                if (b && event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) { mu_input_mousedown(ctx, event.button.x, event.button.y, b); }
+                if (b && event.type ==   SDL_EVENT_MOUSE_BUTTON_UP) { mu_input_mouseup(ctx, event.button.x, event.button.y, b);   }
                 break;
+            }
             case SDL_EVENT_KEY_DOWN:
                 switch (event.type)
                 {
@@ -249,13 +264,13 @@ int main(int argc, char **argv)
 
                 }
                 break;
+
             }    
         }
 
         if (!run)
             break;
-
-        //***************************WORLD SCENE RENDERER***************************
+            
         if (!draw_surface)
         {
             draw_surface = SDL_CreateSurface(SCR_WIDTH, SCR_HEIGHT, SDL_PIXELFORMAT_RGBA32);
@@ -263,17 +278,38 @@ int main(int argc, char **argv)
         }
 
         // Sets color buffer for screen
-        
         color_buffer->pixels = (color4ub *)draw_surface->pixels;
 
-        //vector4f backgroundColor = {0.7f, 1.0f, 1.0f, 1.0f};
-        vector4f backgroundColor = {0.0f, 0.0f, 0.0f, 1.0f};
+        mu_begin(ctx);
+        if (mu_begin_window(ctx, "Transformations", mu_rect(40, 40, 300, 450)))  {
+            mu_Container *win = mu_get_current_container(ctx);
+            win->rect.w = mu_max(win->rect.w, 240);
+            win->rect.h = mu_max(win->rect.h, 300);
+
+                /* window info */
+            if (mu_header(ctx, "Window Info")) {
+                mu_Container *win = mu_get_current_container(ctx);
+                char buf[64];
+                mu_layout_row(ctx, 2, (int[]) { 54, -1 }, 0);
+                mu_label(ctx,"Position:");
+                sprintf(buf, "%d, %d", win->rect.x, win->rect.y); 
+                mu_label(ctx, buf);
+             
+            }
+
+
+            mu_end_window(ctx);
+        }
+        mu_end(ctx);
+
 
         // Set background color
+        vector4f backgroundColor = {0.0f, 128.0f, 0.0f, 1.0f};
         clear(color_buffer, &backgroundColor);
-
         color_buffer->at = image_view_at;
+        
 
+        //***************************WORLD SCENE RENDERER***************************
         shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
 
         //Update model view for transforming based on cam changes
@@ -284,30 +320,69 @@ int main(int argc, char **argv)
         }
 
 
-        // render_faces(shader, cube, zbuffer, color_buffer, true, 0);
-        // // Reset the zbuffer
-        // for (int z = 0; z < zbuf_size; z++)
-        // {
-        //     zbuffer[z] = -DBL_MAX;
-        // }
 
         SDL_Rect draw_rect;
         draw_rect.x = 0;
         draw_rect.y = 0;
         draw_rect.w = SCR_WIDTH;
         draw_rect.h = SCR_HEIGHT;
-        SDL_BlitSurface(draw_surface, &draw_rect,
-                        SDL_GetWindowSurface(window), &draw_rect);
 
+
+        
+        //***************************UI RENDERER***************************
+        mu_Command *cmd = NULL;
+        while (mu_next_command(ctx, &cmd)) {
+            if (cmd->type == MU_COMMAND_TEXT) {
+                mu_Rect dst = {cmd->text.pos.x, cmd->text.pos.y, 0, 0};
+
+                for (const char *p = cmd->text.str; *p; p++) {
+                    if((*p & 0xc0) == 0x80)
+                        continue;
+                    int chr = mu_min((unsigned char) *p, 127);
+                    mu_Rect src = atlas[ATLAS_FONT + chr];
+                    dst.w = src.w;
+                    dst.h = src.h;
+
+                    render_gui(color_buffer, dst, src, cmd->text.color);
+                    dst.x += dst.w;
+                }
+            }
+            if (cmd->type == MU_COMMAND_RECT) {
+                render_gui(color_buffer, cmd->rect.rect, atlas[ATLAS_WHITE], cmd->rect.color);
+
+            }
+            if (cmd->type == MU_COMMAND_ICON) {
+                mu_Rect src = atlas[cmd->icon.id];
+                int x = cmd->icon.rect.x + (cmd->icon.rect.w - src.w) / 2;
+                int y = cmd->icon.rect.y + (cmd->icon.rect.h - src.h) / 2;
+
+                render_gui(color_buffer, mu_rect(x, y, src.w, src.h), src, cmd->icon.color);
+            }
+            if (cmd->type == MU_COMMAND_CLIP) {
+                SDL_Rect clip = {
+                    cmd->clip.rect.x,
+                    cmd->clip.rect.y,
+                    cmd->clip.rect.w,
+                    cmd->clip.rect.h
+                };
+
+                if (cmd->clip.rect.w > 0) {
+                    SDL_SetSurfaceClipRect(draw_surface, &clip);
+                } else {
+                    SDL_SetSurfaceClipRect(draw_surface, NULL);
+                }
+            }
+        }
+        
+        //Update surface should be done end of an iteration
+        SDL_BlitSurface(draw_surface, &draw_rect,
+                    SDL_GetWindowSurface(window), &draw_rect);
         SDL_UpdateWindowSurface(window);
 
-
-
-
     }
+    free(ctx);
+
     free(color_buffer);
-
-
 
     free(zbuffer);
     free(shader->camera);

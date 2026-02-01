@@ -1,0 +1,3 @@
+/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles/no_nonsense_engine.dir
+/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles/edit_cache.dir
+/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles/rebuild_cache.dir

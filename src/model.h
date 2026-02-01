@@ -31,6 +31,16 @@ typedef struct Model {
     float scale;
 }Model;
 
+typedef struct Sprite {
+    int* triangles;
+    struct vector3f* vertices;
+    struct vector3f* textures;
+
+    int vertices_size;
+    int textures_size;
+    int triangles_size;
+}sprite;
+
 
 struct Model* read_model_lines(char *file_name);
 vector4f normal(TGAHeader *tga_header, color4ub *image, vector2f uv);

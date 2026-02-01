@@ -4,7 +4,7 @@
 # in github to be included via this fetch mechanism.
 # As they are updated, I will endevour to keep this gist updated
 cmake_minimum_required(VERSION 3.28.3)
-project(tiny_renderer C)
+project(no_nonsense_engine C)
 
 
 
@@ -34,7 +34,7 @@ else()
 endif()
 
 
-add_executable(tiny_renderer WIN32 
+add_executable(no_nonsense_engine WIN32 
    ./src/config.h
     ./src/main.c
    ./src/type.c
@@ -45,32 +45,34 @@ add_executable(tiny_renderer WIN32
    ./src/render.c
    ./src/util/util.c
    ./src/tga_image.c
+   ./dependencies/microui/microui.c
+   ./dependencies/microui/atlas.inl
     )
 
-set_target_properties(tiny_renderer PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set_target_properties(no_nonsense_engine PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 
 # set the include directory
-target_include_directories(tiny_renderer PUBLIC 
+target_include_directories(no_nonsense_engine PUBLIC 
     src 
     dependencies)
 
 
 
-target_compile_definitions(tiny_renderer PRIVATE CIMGUI_DEFINE_ENUMS_AND_STRUCTS=1)
+target_compile_definitions(no_nonsense_engine PRIVATE CIMGUI_DEFINE_ENUMS_AND_STRUCTS=1)
 # link all libraries to the project
-target_link_libraries(tiny_renderer PRIVATE 
+target_link_libraries(no_nonsense_engine PRIVATE 
                                 m
                                 SDL3::SDL3
                                 )
 
-target_compile_options(tiny_renderer  PRIVATE -fsanitize=address)
-target_link_options(tiny_renderer  PRIVATE -fsanitize=address)
+target_compile_options(no_nonsense_engine  PRIVATE -fsanitize=address)
+target_link_options(no_nonsense_engine  PRIVATE -fsanitize=address)
 
 if (WIN32)
     add_custom_command(
-            TARGET tiny_renderer POST_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:SDL3::SDL3>" "$<TARGET_FILE_DIR:tiny_renderer>"
+            TARGET no_nonsense_engine POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:SDL3::SDL3>" "$<TARGET_FILE_DIR:no_nonsense_engine>"
             VERBATIM
     )
 endif()

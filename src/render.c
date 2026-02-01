@@ -29,6 +29,7 @@ vector3f convert_to_ndc(vector3f vec, int width, int height) {
 
 void render_faces(Shader *shader, Model *model, double *zbuffer, image_view* color_buffer, bool is_bf_cull, float move) {
 
+    //Reference vertices by induces
     for (int v = 0; v < (model->triangles_size); v += 9) {
       
         vector4f clip[3];
@@ -49,7 +50,7 @@ void render_faces(Shader *shader, Model *model, double *zbuffer, image_view* col
 
         
 
-        triangle(shader, model, zbuffer, clip, varying_uv, norm, color_buffer, is_bf_cull);
+        triangle3D(shader, model, zbuffer, clip, varying_uv, norm, color_buffer, is_bf_cull);
     }
     
 }
@@ -100,6 +101,42 @@ void sort_y_coordinates(vector3f* vectors, int n) {
             break;
         
     }
+}
+
+void render_gui(image_view* color_buffer, mu_Rect dst, mu_Rect src, mu_Color color) {
+    float x = src.x / (float) ATLAS_WIDTH;
+    float y = src.y / (float) ATLAS_HEIGHT;
+    float w = src.w / (float) ATLAS_WIDTH;
+    float h = src.h / (float) ATLAS_HEIGHT;
+    vector3f vertices[4] = {
+        (vector3f){dst.x,        dst.y,       1.0f},
+        (vector3f){dst.x+dst.w,  dst.y,       1.0f},
+        (vector3f){dst.x,        dst.y+dst.h,       1.0f},
+        (vector3f){dst.x+dst.w,        dst.y+dst.h,       1.0f}
+    };
+
+    vector3f textures[4] = {
+        (vector3f){x,    y,   1.0f},
+        (vector3f){x+w,  y,   1.0f},
+        (vector3f){x,    y+h,       1.0f},
+        (vector3f){x+w,    y+h,       1.0f}
+    }; 
+
+    int indices[6] = {0, 1, 2,
+                     2, 3, 1,}; 
+    color4ub tri_color = {color.r, color.g, color.b, color.a};
+
+    vector3f vec[3];
+    vector3f tex[3];
+    //Reference vertices by induces
+    for (int v = 0; v < 6; v += 3) {
+        for (int f = 0; f < 3; f++) {
+            vec[f] = vertices[indices[v+f]];
+        }
+
+        triangle2D(color_buffer, vec, tri_color, false);
+    }
+
 }
 
 void line(int ax, int ay, int bx, int by, image_view *color_buffer, vector4f *color) {
@@ -211,7 +248,7 @@ double signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy) {
 }
 
 //Uses bounding box rasterization
-void triangle(Shader *shader,  Model *model, double *zbuffer, vector4f clip[3], vector3f varying_uv[3], vector4f norm[3], image_view *color_buffer, bool is_backface_cull) {
+void triangle3D(Shader *shader,  Model *model, double *zbuffer, vector4f clip[3], vector3f varying_uv[3], vector4f norm[3], image_view *color_buffer, bool is_backface_cull) {
 
     vector3f sun_direction = shader->light->direction;
     vector3f cam_pos = shader->camera->position;
@@ -223,26 +260,26 @@ void triangle(Shader *shader,  Model *model, double *zbuffer, vector4f clip[3], 
         { clip[2].x / clip[2].w, clip[2].y / clip[2].w, clip[2].z / clip[2].w, 1.0f }
     };
 
-    vector4f screen[3] = {
+    vector4f v[3] = {
         multiply_mat4f_vec4f(shader->Viewport, ndc[0]), 
         multiply_mat4f_vec4f(shader->Viewport, ndc[1]), 
         multiply_mat4f_vec4f(shader->Viewport, ndc[2])};
     
-    //Triangle ABC in screen coordinates   
+    //Triangle ABC in v coordinates   
     matrix3f ABC = {
-        screen[0].x, screen[0].y, 1.,
-        screen[1].x, screen[1].y, 1., 
-        screen[2].x, screen[2].y, 1.      
+        v[0].x, v[0].y, 1.,
+        v[1].x, v[1].y, 1., 
+        v[2].x, v[2].y, 1.      
     };
 
 
     //backface culling
     if(determinant(ABC) < 1 && is_backface_cull) return;
 
-    int bbminx = fmin(fmin(screen[0].x, screen[1].x), screen[2].x);
-    int bbminy = fmin(fmin(screen[0].y, screen[1].y), screen[2].y);
-    int bbmaxx = fmax(fmax(screen[0].x, screen[1].x), screen[2].x);
-    int bbmaxy = fmax(fmax(screen[0].y, screen[1].y), screen[2].y);
+    int bbminx = fmin(fmin(v[0].x, v[1].x), v[2].x);
+    int bbminy = fmin(fmin(v[0].y, v[1].y), v[2].y);
+    int bbmaxx = fmax(fmax(v[0].x, v[1].x), v[2].x);
+    int bbmaxy = fmax(fmax(v[0].y, v[1].y), v[2].y);
 
 
    #pragma omp parallel for
@@ -316,6 +353,77 @@ void triangle(Shader *shader,  Model *model, double *zbuffer, vector4f clip[3], 
         }
     }
 
+}
+
+void triangle2D(image_view* color_buffer, vector3f v[3], color4ub color, bool is_backface_cull) {
+    matrix3f ABC = {
+        v[0].x, v[0].y, 1.,
+        v[1].x, v[1].y, 1., 
+        v[2].x, v[2].y, 1.      
+    };
+
+
+    //backface culling
+    if(determinant(ABC) < 1 && is_backface_cull) return;
+
+    int bbminx = fmin(fmin(v[0].x, v[1].x), v[2].x);
+    int bbminy = fmin(fmin(v[0].y, v[1].y), v[2].y);
+    int bbmaxx = fmax(fmax(v[0].x, v[1].x), v[2].x);
+    int bbmaxy = fmax(fmax(v[0].y, v[1].y), v[2].y);
+
+
+   #pragma omp parallel for
+    for (int x = fmax(bbminx, 0); x <= fmin(bbmaxx, color_buffer->width-1); x++) {
+        for (int y = fmax(bbminy,0); y <= fmin(bbmaxy, color_buffer->height-1); y++) {
+             //Barycentric coordinates
+            vector3f bc = multiply_mat3f_vec3f((inverse_mat3f(ABC)), (vector3f){(double)x, (double) y, 1.});
+            //Checks if pixel outside triangle
+            if (bc.x < 0 || bc.y < 0 || bc.z < 0) 
+                continue;
+
+            int normal_y = color_buffer->height-y-1;
+
+            *color_buffer->at(color_buffer, x, y) = color;
+            //printf("%d, %d, %d\n", color.r, color.g, color.b);
+        }
+    }
+
+}
+
+void triangle2D_texture(image_view* color_buffer, vector3f v[3], vector3f tex[3], color4ub color, bool is_backface_cull) {
+    matrix3f ABC = {
+        v[0].x, v[0].y, 1.,
+        v[1].x, v[1].y, 1., 
+        v[2].x, v[2].y, 1.      
+    };
+
+
+    //backface culling
+    if(determinant(ABC) < 1 && is_backface_cull) return;
+
+    int bbminx = fmin(fmin(v[0].x, v[1].x), v[2].x);
+    int bbminy = fmin(fmin(v[0].y, v[1].y), v[2].y);
+    int bbmaxx = fmax(fmax(v[0].x, v[1].x), v[2].x);
+    int bbmaxy = fmax(fmax(v[0].y, v[1].y), v[2].y);
+
+
+   #pragma omp parallel for
+    for (int x = fmax(bbminx, 0); x <= fmin(bbmaxx, color_buffer->width-1); x++) {
+        for (int y = fmax(bbminy,0); y <= fmin(bbmaxy, color_buffer->height-1); y++) {
+             //Barycentric coordinates
+            vector3f bc = multiply_mat3f_vec3f((inverse_mat3f(ABC)), (vector3f){(double)x, (double) y, 1.});
+            //Checks if pixel outside triangle
+            if (bc.x < 0 || bc.y < 0 || bc.z < 0) 
+                continue;
+
+            vector3f m = add_vec3f(add_vec3f(scale_vec3f(tex[0], bc.x), scale_vec3f(tex[1], bc.y)), scale_vec3f(tex[2], bc.z));
+
+            int normal_y = color_buffer->height-y-1;
+
+            *color_buffer->at(color_buffer, x, y) = (color4ub){};
+            //printf("%d, %d, %d\n", color.r, color.g, color.b);
+        }
+    }
 
 }
 

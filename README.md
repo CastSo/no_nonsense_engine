@@ -1,4 +1,4 @@
-# Tiny Renderer
+# No Nonsense Engine
 A CPU-based software rasterizer, built to study graphics API like OpenGL. Under the guidances of primarily, the ["Tiny Renderer" articles][1]. 
 
 
