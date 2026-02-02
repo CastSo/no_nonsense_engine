@@ -24,7 +24,7 @@ int text_width(mu_Font font, const char *text, int len) {
 }
 
 int text_height(mu_Font font) {
-    return 18;
+    return 16;
 }
 
 static void write_log(const char *text) {
@@ -304,7 +304,7 @@ int main(int argc, char **argv)
 
 
         // Set background color
-        vector4f backgroundColor = {0.0f, 128.0f, 0.0f, 1.0f};
+        vector4f backgroundColor = {0.68f, 0.75f, 0.83f, 1.0f};
         clear(color_buffer, &backgroundColor);
         color_buffer->at = image_view_at;
         
@@ -336,14 +336,16 @@ int main(int argc, char **argv)
                 mu_Rect dst = {cmd->text.pos.x, cmd->text.pos.y, 0, 0};
 
                 for (const char *p = cmd->text.str; *p; p++) {
-                    if((*p & 0xc0) == 0x80)
+                    if((*p & 0xc0) == 0x80){
                         continue;
+                    }
+                    //printf("%s", p);
                     int chr = mu_min((unsigned char) *p, 127);
                     mu_Rect src = atlas[ATLAS_FONT + chr];
                     dst.w = src.w;
                     dst.h = src.h;
 
-                    render_gui(color_buffer, dst, src, cmd->text.color);
+                    render_gui_texture(color_buffer, dst, src, cmd->text.color);
                     dst.x += dst.w;
                 }
             }
@@ -356,7 +358,7 @@ int main(int argc, char **argv)
                 int x = cmd->icon.rect.x + (cmd->icon.rect.w - src.w) / 2;
                 int y = cmd->icon.rect.y + (cmd->icon.rect.h - src.h) / 2;
 
-                render_gui(color_buffer, mu_rect(x, y, src.w, src.h), src, cmd->icon.color);
+                render_gui_texture(color_buffer, mu_rect(x, y, src.w, src.h), src, cmd->icon.color);
             }
             if (cmd->type == MU_COMMAND_CLIP) {
                 SDL_Rect clip = {
@@ -366,11 +368,25 @@ int main(int argc, char **argv)
                     cmd->clip.rect.h
                 };
 
+                // vector3f vertices[4] = {
+                //     (vector3f){clip.x,        clip.y,       1.0f},
+                //     (vector3f){clip.x+clip.w,  clip.y,       1.0f},
+                //     (vector3f){clip.x,        clip.y+clip.h,       1.0f},
+                //     (vector3f){clip.x+clip.w,        clip.y+clip.h,       1.0f}
+                // };
+
+                // int indices[6] = {
+                //     0, 1, 2,
+                //      2, 3, 1,}; 
+                // color4ub tri_color = {backgroundColor.x, backgroundColor.y, backgroundColor.z, backgroundColor.w};
+
                 if (cmd->clip.rect.w > 0) {
                     SDL_SetSurfaceClipRect(draw_surface, &clip);
                 } else {
                     SDL_SetSurfaceClipRect(draw_surface, NULL);
                 }
+
+
             }
         }
         

@@ -103,7 +103,7 @@ void sort_y_coordinates(vector3f* vectors, int n) {
     }
 }
 
-void render_gui(image_view* color_buffer, mu_Rect dst, mu_Rect src, mu_Color color) {
+void render_gui_texture(image_view* color_buffer, mu_Rect dst, mu_Rect src, mu_Color color) {
     float x = src.x / (float) ATLAS_WIDTH;
     float y = src.y / (float) ATLAS_HEIGHT;
     float w = src.w / (float) ATLAS_WIDTH;
@@ -132,7 +132,41 @@ void render_gui(image_view* color_buffer, mu_Rect dst, mu_Rect src, mu_Color col
     for (int v = 0; v < 6; v += 3) {
         for (int f = 0; f < 3; f++) {
             vec[f] = vertices[indices[v+f]];
+            tex[f] = textures[indices[v+f]];
+            //printf("%f, %f\n", tex[f].x, tex[f].y);    
         }
+        
+
+        triangle2D_texture(color_buffer, vec, tex, tri_color, false);
+    }
+
+}
+
+void render_gui(image_view* color_buffer, mu_Rect dst, mu_Rect src, mu_Color color) {
+    float x = src.x / (float) ATLAS_WIDTH;
+    float y = src.y / (float) ATLAS_HEIGHT;
+    float w = src.w / (float) ATLAS_WIDTH;
+    float h = src.h / (float) ATLAS_HEIGHT;
+    vector3f vertices[4] = {
+        (vector3f){dst.x,        dst.y,       1.0f},
+        (vector3f){dst.x+dst.w,  dst.y,       1.0f},
+        (vector3f){dst.x,        dst.y+dst.h,       1.0f},
+        (vector3f){dst.x+dst.w,        dst.y+dst.h,       1.0f}
+    };
+
+
+    int indices[6] = {0, 1, 2,
+                     2, 3, 1,}; 
+    color4ub tri_color = {color.r, color.g, color.b, color.a};
+
+    vector3f vec[3];
+    //Reference vertices by induces
+    for (int v = 0; v < 6; v += 3) {
+        for (int f = 0; f < 3; f++) {
+            vec[f] = vertices[indices[v+f]];
+            //printf("%f, %f\n", tex[f].x, tex[f].y);    
+        }
+        
 
         triangle2D(color_buffer, vec, tri_color, false);
     }
@@ -241,10 +275,6 @@ void triangle_scanline(int ax, int ay, int bx, int by, int cx, int cy, image_vie
 
      
 
-}
-
-double signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy) {
-    return .5*((by-ay)*(bx+ax) + (cy-by)*(cx+bx) + (ay-cy)*(ax+cx));
 }
 
 //Uses bounding box rasterization
@@ -390,6 +420,10 @@ void triangle2D(image_view* color_buffer, vector3f v[3], color4ub color, bool is
 
 }
 
+double signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy) {
+    return .5*((by-ay)*(bx+ax) + (cy-by)*(cx+bx) + (ay-cy)*(ax+cx));
+}
+
 void triangle2D_texture(image_view* color_buffer, vector3f v[3], vector3f tex[3], color4ub color, bool is_backface_cull) {
     matrix3f ABC = {
         v[0].x, v[0].y, 1.,
@@ -400,7 +434,6 @@ void triangle2D_texture(image_view* color_buffer, vector3f v[3], vector3f tex[3]
 
     //backface culling
     if(determinant(ABC) < 1 && is_backface_cull) return;
-
     int bbminx = fmin(fmin(v[0].x, v[1].x), v[2].x);
     int bbminy = fmin(fmin(v[0].y, v[1].y), v[2].y);
     int bbmaxx = fmax(fmax(v[0].x, v[1].x), v[2].x);
@@ -410,6 +443,7 @@ void triangle2D_texture(image_view* color_buffer, vector3f v[3], vector3f tex[3]
    #pragma omp parallel for
     for (int x = fmax(bbminx, 0); x <= fmin(bbmaxx, color_buffer->width-1); x++) {
         for (int y = fmax(bbminy,0); y <= fmin(bbmaxy, color_buffer->height-1); y++) {
+
              //Barycentric coordinates
             vector3f bc = multiply_mat3f_vec3f((inverse_mat3f(ABC)), (vector3f){(double)x, (double) y, 1.});
             //Checks if pixel outside triangle
@@ -417,11 +451,16 @@ void triangle2D_texture(image_view* color_buffer, vector3f v[3], vector3f tex[3]
                 continue;
 
             vector3f m = add_vec3f(add_vec3f(scale_vec3f(tex[0], bc.x), scale_vec3f(tex[1], bc.y)), scale_vec3f(tex[2], bc.z));
+            //Texture coordinates 
+            int tx = (int)(m.x * (ATLAS_WIDTH));
+            int ty = (int)(m.y * (ATLAS_HEIGHT));
 
-            int normal_y = color_buffer->height-y-1;
 
-            *color_buffer->at(color_buffer, x, y) = (color4ub){};
-            //printf("%d, %d, %d\n", color.r, color.g, color.b);
+            int id = ty*ATLAS_WIDTH+tx;
+
+            *color_buffer->at(color_buffer, x, y) = (color4ub){atlas_texture[id], atlas_texture[id], atlas_texture[id], atlas_texture[id]};
+            //printf("%d, %d, %d, %d\n", atlas[id].x, atlas[id].y, atlas[id].w, atlas[id].h);
+            //printf("%d\n", id);
         }
     }
 
