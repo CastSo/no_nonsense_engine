@@ -24,7 +24,7 @@ int text_width(mu_Font font, const char *text, int len) {
 }
 
 int text_height(mu_Font font) {
-    return 16;
+    return 18;
 }
 
 static void write_log(const char *text) {
@@ -39,8 +39,8 @@ static void write_log(const char *text) {
 int main(int argc, char **argv)
 {
 
-    int SCR_WIDTH = 1024;
-    int SCR_HEIGHT = 1024;
+    int SCR_WIDTH = 800;
+    int SCR_HEIGHT = 800;
 
     int mouse_x = 0;
     int mouse_y = 0;
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
         SDL_Log("SDL initialization failed!: %s\n", SDL_GetError());
     }
 
-    SDL_Window *window = SDL_CreateWindow("Tiny Renderer", SCR_WIDTH, SCR_HEIGHT, 0);
+    SDL_Window *window = SDL_CreateWindow("No Nonsense", SCR_WIDTH, SCR_HEIGHT, 0);
     
 
     bool run = true;
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
     int vert_count = 24;
 
     //Uses counter-clockwise winding like OpenGL
-    double vertices[72] = {
+    float vertices[72] = {
         -0.5f, -0.5f, -0.5f,         // A 0
         0.5f, -0.5f, -0.5f,         // B 1
         0.5f,  0.5f, -0.5f,         // C 2
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 
 
     int zbuf_size = SCR_WIDTH * SCR_HEIGHT;
-    double *zbuffer = malloc(sizeof(double) * zbuf_size);
+    float *zbuffer = malloc(sizeof(float) * zbuf_size);
     for (int z = 0; z < zbuf_size; z++)
     {
         zbuffer[z] = -DBL_MAX;
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 
     Uint64 current_time = SDL_GetPerformanceCounter();
     Uint64 last_time;
-    double dt = 0;
+    float dt = 0;
 
     cube->angle = 60;
     float move = 0.05f;
@@ -171,7 +171,6 @@ int main(int argc, char **argv)
     image_view *color_buffer = malloc(sizeof(image_view));
     color_buffer->width = SCR_WIDTH;
     color_buffer->height = SCR_HEIGHT;
-
     
     obj_model->header_uv = malloc(sizeof(TGAHeader));
     obj_model->header_diffuse = malloc(sizeof(TGAHeader));
@@ -200,7 +199,7 @@ int main(int argc, char **argv)
         current_time = SDL_GetPerformanceCounter();
 
         
-        dt = (double)((current_time - last_time) * 10000 / (double)SDL_GetPerformanceFrequency());
+        dt = (float)((current_time - last_time) * 10000 / (float)SDL_GetPerformanceFrequency());
         cam_speed = 0.8f;
 
         while (SDL_PollEvent(&event))
@@ -246,19 +245,21 @@ int main(int argc, char **argv)
                     //Update cam position and game objects modelview
                     if (event.key.key == SDLK_W) {
                         shader->camera->position = add_vec3f(scale_vec3f(shader->camera->direction, cam_speed), shader->camera->position); 
-                        
+                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
+
                     }
                     if (event.key.key == SDLK_S) {
-                        shader->camera->position = subtract_vec3f(shader->camera->position, scale_vec3f(shader->camera->direction, cam_speed)); 
+                        shader->camera->position = subtract_vec3f(shader->camera->position, scale_vec3f(shader->camera->direction, cam_speed));
+                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
                         
                     }
                     if (event.key.key == SDLK_A) {
                         shader->camera->position = subtract_vec3f(shader->camera->position, scale_vec3f(normalize_vec3f(cross(shader->camera->direction, shader->camera->up)), cam_speed));
-                        
+                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
                     }
                     if (event.key.key == SDLK_D) {
                         shader->camera->position = add_vec3f(shader->camera->position, scale_vec3f(normalize_vec3f(cross(shader->camera->direction, shader->camera->up)), cam_speed));
-                        
+                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
                     }
 
 
@@ -281,7 +282,7 @@ int main(int argc, char **argv)
         color_buffer->pixels = (color4ub *)draw_surface->pixels;
 
         mu_begin(ctx);
-        if (mu_begin_window(ctx, "Transformations", mu_rect(40, 40, 300, 450)))  {
+        if (mu_begin_window(ctx, "Transformations", mu_rect(40, 40, 240, 300)))  {
             mu_Container *win = mu_get_current_container(ctx);
             win->rect.w = mu_max(win->rect.w, 240);
             win->rect.h = mu_max(win->rect.h, 300);
@@ -310,9 +311,7 @@ int main(int argc, char **argv)
         
 
         //***************************WORLD SCENE RENDERER***************************
-        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
 
-        //Update model view for transforming based on cam changes
         render_faces(shader, obj_model, zbuffer, color_buffer, true, 0);
         for (int z = 0; z < zbuf_size; z++)
         {
@@ -331,6 +330,7 @@ int main(int argc, char **argv)
         
         //***************************UI RENDERER***************************
         mu_Command *cmd = NULL;
+        
         while (mu_next_command(ctx, &cmd)) {
             if (cmd->type == MU_COMMAND_TEXT) {
                 mu_Rect dst = {cmd->text.pos.x, cmd->text.pos.y, 0, 0};
@@ -345,12 +345,12 @@ int main(int argc, char **argv)
                     dst.w = src.w;
                     dst.h = src.h;
 
-                    render_gui_texture(color_buffer, dst, src, cmd->text.color);
+                    //render_gui_texture(color_buffer, dst, src, cmd->text.color);
                     dst.x += dst.w;
                 }
             }
             if (cmd->type == MU_COMMAND_RECT) {
-                render_gui(color_buffer, cmd->rect.rect, atlas[ATLAS_WHITE], cmd->rect.color);
+                //render_gui(color_buffer, cmd->rect.rect, atlas[ATLAS_WHITE], cmd->rect.color);
 
             }
             if (cmd->type == MU_COMMAND_ICON) {
@@ -358,7 +358,7 @@ int main(int argc, char **argv)
                 int x = cmd->icon.rect.x + (cmd->icon.rect.w - src.w) / 2;
                 int y = cmd->icon.rect.y + (cmd->icon.rect.h - src.h) / 2;
 
-                render_gui_texture(color_buffer, mu_rect(x, y, src.w, src.h), src, cmd->icon.color);
+                //render_gui_texture(color_buffer, mu_rect(x, y, src.w, src.h), src, cmd->icon.color);
             }
             if (cmd->type == MU_COMMAND_CLIP) {
                 SDL_Rect clip = {
@@ -367,18 +367,6 @@ int main(int argc, char **argv)
                     cmd->clip.rect.w,
                     cmd->clip.rect.h
                 };
-
-                // vector3f vertices[4] = {
-                //     (vector3f){clip.x,        clip.y,       1.0f},
-                //     (vector3f){clip.x+clip.w,  clip.y,       1.0f},
-                //     (vector3f){clip.x,        clip.y+clip.h,       1.0f},
-                //     (vector3f){clip.x+clip.w,        clip.y+clip.h,       1.0f}
-                // };
-
-                // int indices[6] = {
-                //     0, 1, 2,
-                //      2, 3, 1,}; 
-                // color4ub tri_color = {backgroundColor.x, backgroundColor.y, backgroundColor.z, backgroundColor.w};
 
                 if (cmd->clip.rect.w > 0) {
                     SDL_SetSurfaceClipRect(draw_surface, &clip);

@@ -297,30 +297,6 @@ src/transformation.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/no_nonsense_engine.dir/build.make CMakeFiles/no_nonsense_engine.dir/src/transformation.c.s
 .PHONY : src/transformation.c.s
 
-src/type.o: src/type.c.o
-.PHONY : src/type.o
-
-# target to build an object file
-src/type.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/no_nonsense_engine.dir/build.make CMakeFiles/no_nonsense_engine.dir/src/type.c.o
-.PHONY : src/type.c.o
-
-src/type.i: src/type.c.i
-.PHONY : src/type.i
-
-# target to preprocess a source file
-src/type.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/no_nonsense_engine.dir/build.make CMakeFiles/no_nonsense_engine.dir/src/type.c.i
-.PHONY : src/type.c.i
-
-src/type.s: src/type.c.s
-.PHONY : src/type.s
-
-# target to generate assembly for a file
-src/type.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/no_nonsense_engine.dir/build.make CMakeFiles/no_nonsense_engine.dir/src/type.c.s
-.PHONY : src/type.c.s
-
 src/util/util.o: src/util/util.c.o
 .PHONY : src/util/util.o
 
@@ -399,9 +375,6 @@ help:
 	@echo "... src/transformation.o"
 	@echo "... src/transformation.i"
 	@echo "... src/transformation.s"
-	@echo "... src/type.o"
-	@echo "... src/type.i"
-	@echo "... src/type.s"
 	@echo "... src/util/util.o"
 	@echo "... src/util/util.i"
 	@echo "... src/util/util.s"

@@ -13,8 +13,6 @@ file(REMOVE_RECURSE
   "CMakeFiles/no_nonsense_engine.dir/src/tga_image.c.o.d"
   "CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o"
   "CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o.d"
-  "CMakeFiles/no_nonsense_engine.dir/src/type.c.o"
-  "CMakeFiles/no_nonsense_engine.dir/src/type.c.o.d"
   "CMakeFiles/no_nonsense_engine.dir/src/util/util.c.o"
   "CMakeFiles/no_nonsense_engine.dir/src/util/util.c.o.d"
   "CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.o"

@@ -37,7 +37,6 @@ endif()
 add_executable(no_nonsense_engine WIN32 
    ./src/config.h
     ./src/main.c
-   ./src/type.c
    ./src/vector_math.c
    ./src/model.c
    ./src/transformation.c

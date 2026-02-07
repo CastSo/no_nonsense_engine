@@ -18,7 +18,7 @@ matrix4f viewport(int x, int y, int w, int h) {
         0, 0, 0, 1};
 }
 
-matrix4f perspective(double f) {
+matrix4f perspective(float f) {
     return (matrix4f){
         1, 0, 0, 0, 
         0, 1, 0, 0, 
@@ -36,7 +36,7 @@ matrix4f lookat(vector3f eye, vector3f center, vector3f up) {
 
 }
 
-vector4f rotateY(vector4f v, double a) {
+vector4f rotateY(vector4f v, float a) {
     
     matrix4f mat =  {cos(a), 0, -sin(a), 0,
                      0,  1, 0, 0,
@@ -46,7 +46,7 @@ vector4f rotateY(vector4f v, double a) {
 
 }
 
-vector4f rotateX(vector4f v, double a) {
+vector4f rotateX(vector4f v, float a) {
     
     matrix4f mat =  {1, 0, 0, 0,
                     0, cos(a), sin(a), 0,
@@ -58,7 +58,7 @@ vector4f rotateX(vector4f v, double a) {
 }
 
 
-vector4f rotateZ(vector4f v, double a) {
+vector4f rotateZ(vector4f v, float a) {
     
     matrix4f mat = { cos(a), -sin(a), 0, 0,
                     sin(a), cos(a), 0, 0,

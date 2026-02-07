@@ -15,7 +15,6 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/render.c" "CMakeFiles/no_nonsense_engine.dir/src/render.c.o" "gcc" "CMakeFiles/no_nonsense_engine.dir/src/render.c.o.d"
   "/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/tga_image.c" "CMakeFiles/no_nonsense_engine.dir/src/tga_image.c.o" "gcc" "CMakeFiles/no_nonsense_engine.dir/src/tga_image.c.o.d"
   "/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/transformation.c" "CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o" "gcc" "CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o.d"
-  "/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/type.c" "CMakeFiles/no_nonsense_engine.dir/src/type.c.o" "gcc" "CMakeFiles/no_nonsense_engine.dir/src/type.c.o.d"
   "/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/util/util.c" "CMakeFiles/no_nonsense_engine.dir/src/util/util.c.o" "gcc" "CMakeFiles/no_nonsense_engine.dir/src/util/util.c.o.d"
   "/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/vector_math.c" "CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.o" "gcc" "CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.o.d"
   )

@@ -83,24 +83,10 @@ CMakeFiles/no_nonsense_engine.dir/src/main.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/no_nonsense_engine.dir/src/main.c.s"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/main.c -o CMakeFiles/no_nonsense_engine.dir/src/main.c.s
 
-CMakeFiles/no_nonsense_engine.dir/src/type.c.o: CMakeFiles/no_nonsense_engine.dir/flags.make
-CMakeFiles/no_nonsense_engine.dir/src/type.c.o: src/type.c
-CMakeFiles/no_nonsense_engine.dir/src/type.c.o: CMakeFiles/no_nonsense_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/no_nonsense_engine.dir/src/type.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/no_nonsense_engine.dir/src/type.c.o -MF CMakeFiles/no_nonsense_engine.dir/src/type.c.o.d -o CMakeFiles/no_nonsense_engine.dir/src/type.c.o -c /home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/type.c
-
-CMakeFiles/no_nonsense_engine.dir/src/type.c.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/no_nonsense_engine.dir/src/type.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/type.c > CMakeFiles/no_nonsense_engine.dir/src/type.c.i
-
-CMakeFiles/no_nonsense_engine.dir/src/type.c.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/no_nonsense_engine.dir/src/type.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/type.c -o CMakeFiles/no_nonsense_engine.dir/src/type.c.s
-
 CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.o: CMakeFiles/no_nonsense_engine.dir/flags.make
 CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.o: src/vector_math.c
 CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.o: CMakeFiles/no_nonsense_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.o -MF CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.o.d -o CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.o -c /home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/vector_math.c
 
 CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.i: cmake_force
@@ -114,7 +100,7 @@ CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.s: cmake_force
 CMakeFiles/no_nonsense_engine.dir/src/model.c.o: CMakeFiles/no_nonsense_engine.dir/flags.make
 CMakeFiles/no_nonsense_engine.dir/src/model.c.o: src/model.c
 CMakeFiles/no_nonsense_engine.dir/src/model.c.o: CMakeFiles/no_nonsense_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building C object CMakeFiles/no_nonsense_engine.dir/src/model.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/no_nonsense_engine.dir/src/model.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/no_nonsense_engine.dir/src/model.c.o -MF CMakeFiles/no_nonsense_engine.dir/src/model.c.o.d -o CMakeFiles/no_nonsense_engine.dir/src/model.c.o -c /home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/model.c
 
 CMakeFiles/no_nonsense_engine.dir/src/model.c.i: cmake_force
@@ -128,7 +114,7 @@ CMakeFiles/no_nonsense_engine.dir/src/model.c.s: cmake_force
 CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o: CMakeFiles/no_nonsense_engine.dir/flags.make
 CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o: src/transformation.c
 CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o: CMakeFiles/no_nonsense_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building C object CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building C object CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o -MF CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o.d -o CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o -c /home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/transformation.c
 
 CMakeFiles/no_nonsense_engine.dir/src/transformation.c.i: cmake_force
@@ -142,7 +128,7 @@ CMakeFiles/no_nonsense_engine.dir/src/transformation.c.s: cmake_force
 CMakeFiles/no_nonsense_engine.dir/src/image_view.c.o: CMakeFiles/no_nonsense_engine.dir/flags.make
 CMakeFiles/no_nonsense_engine.dir/src/image_view.c.o: src/image_view.c
 CMakeFiles/no_nonsense_engine.dir/src/image_view.c.o: CMakeFiles/no_nonsense_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building C object CMakeFiles/no_nonsense_engine.dir/src/image_view.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building C object CMakeFiles/no_nonsense_engine.dir/src/image_view.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/no_nonsense_engine.dir/src/image_view.c.o -MF CMakeFiles/no_nonsense_engine.dir/src/image_view.c.o.d -o CMakeFiles/no_nonsense_engine.dir/src/image_view.c.o -c /home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/image_view.c
 
 CMakeFiles/no_nonsense_engine.dir/src/image_view.c.i: cmake_force
@@ -156,7 +142,7 @@ CMakeFiles/no_nonsense_engine.dir/src/image_view.c.s: cmake_force
 CMakeFiles/no_nonsense_engine.dir/src/render.c.o: CMakeFiles/no_nonsense_engine.dir/flags.make
 CMakeFiles/no_nonsense_engine.dir/src/render.c.o: src/render.c
 CMakeFiles/no_nonsense_engine.dir/src/render.c.o: CMakeFiles/no_nonsense_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building C object CMakeFiles/no_nonsense_engine.dir/src/render.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building C object CMakeFiles/no_nonsense_engine.dir/src/render.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/no_nonsense_engine.dir/src/render.c.o -MF CMakeFiles/no_nonsense_engine.dir/src/render.c.o.d -o CMakeFiles/no_nonsense_engine.dir/src/render.c.o -c /home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/render.c
 
 CMakeFiles/no_nonsense_engine.dir/src/render.c.i: cmake_force
@@ -170,7 +156,7 @@ CMakeFiles/no_nonsense_engine.dir/src/render.c.s: cmake_force
 CMakeFiles/no_nonsense_engine.dir/src/util/util.c.o: CMakeFiles/no_nonsense_engine.dir/flags.make
 CMakeFiles/no_nonsense_engine.dir/src/util/util.c.o: src/util/util.c
 CMakeFiles/no_nonsense_engine.dir/src/util/util.c.o: CMakeFiles/no_nonsense_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building C object CMakeFiles/no_nonsense_engine.dir/src/util/util.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building C object CMakeFiles/no_nonsense_engine.dir/src/util/util.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/no_nonsense_engine.dir/src/util/util.c.o -MF CMakeFiles/no_nonsense_engine.dir/src/util/util.c.o.d -o CMakeFiles/no_nonsense_engine.dir/src/util/util.c.o -c /home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/util/util.c
 
 CMakeFiles/no_nonsense_engine.dir/src/util/util.c.i: cmake_force
@@ -184,7 +170,7 @@ CMakeFiles/no_nonsense_engine.dir/src/util/util.c.s: cmake_force
 CMakeFiles/no_nonsense_engine.dir/src/tga_image.c.o: CMakeFiles/no_nonsense_engine.dir/flags.make
 CMakeFiles/no_nonsense_engine.dir/src/tga_image.c.o: src/tga_image.c
 CMakeFiles/no_nonsense_engine.dir/src/tga_image.c.o: CMakeFiles/no_nonsense_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building C object CMakeFiles/no_nonsense_engine.dir/src/tga_image.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building C object CMakeFiles/no_nonsense_engine.dir/src/tga_image.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/no_nonsense_engine.dir/src/tga_image.c.o -MF CMakeFiles/no_nonsense_engine.dir/src/tga_image.c.o.d -o CMakeFiles/no_nonsense_engine.dir/src/tga_image.c.o -c /home/cimex/Projects/Computer_Graphics/no_nonsense_engine/src/tga_image.c
 
 CMakeFiles/no_nonsense_engine.dir/src/tga_image.c.i: cmake_force
@@ -198,7 +184,7 @@ CMakeFiles/no_nonsense_engine.dir/src/tga_image.c.s: cmake_force
 CMakeFiles/no_nonsense_engine.dir/dependencies/microui/microui.c.o: CMakeFiles/no_nonsense_engine.dir/flags.make
 CMakeFiles/no_nonsense_engine.dir/dependencies/microui/microui.c.o: dependencies/microui/microui.c
 CMakeFiles/no_nonsense_engine.dir/dependencies/microui/microui.c.o: CMakeFiles/no_nonsense_engine.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building C object CMakeFiles/no_nonsense_engine.dir/dependencies/microui/microui.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building C object CMakeFiles/no_nonsense_engine.dir/dependencies/microui/microui.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/no_nonsense_engine.dir/dependencies/microui/microui.c.o -MF CMakeFiles/no_nonsense_engine.dir/dependencies/microui/microui.c.o.d -o CMakeFiles/no_nonsense_engine.dir/dependencies/microui/microui.c.o -c /home/cimex/Projects/Computer_Graphics/no_nonsense_engine/dependencies/microui/microui.c
 
 CMakeFiles/no_nonsense_engine.dir/dependencies/microui/microui.c.i: cmake_force
@@ -212,7 +198,6 @@ CMakeFiles/no_nonsense_engine.dir/dependencies/microui/microui.c.s: cmake_force
 # Object files for target no_nonsense_engine
 no_nonsense_engine_OBJECTS = \
 "CMakeFiles/no_nonsense_engine.dir/src/main.c.o" \
-"CMakeFiles/no_nonsense_engine.dir/src/type.c.o" \
 "CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.o" \
 "CMakeFiles/no_nonsense_engine.dir/src/model.c.o" \
 "CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o" \
@@ -226,7 +211,6 @@ no_nonsense_engine_OBJECTS = \
 no_nonsense_engine_EXTERNAL_OBJECTS =
 
 no_nonsense_engine: CMakeFiles/no_nonsense_engine.dir/src/main.c.o
-no_nonsense_engine: CMakeFiles/no_nonsense_engine.dir/src/type.c.o
 no_nonsense_engine: CMakeFiles/no_nonsense_engine.dir/src/vector_math.c.o
 no_nonsense_engine: CMakeFiles/no_nonsense_engine.dir/src/model.c.o
 no_nonsense_engine: CMakeFiles/no_nonsense_engine.dir/src/transformation.c.o
@@ -238,7 +222,7 @@ no_nonsense_engine: CMakeFiles/no_nonsense_engine.dir/dependencies/microui/micro
 no_nonsense_engine: CMakeFiles/no_nonsense_engine.dir/build.make
 no_nonsense_engine: /usr/local/lib/libSDL3.so.0.3.3
 no_nonsense_engine: CMakeFiles/no_nonsense_engine.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Linking C executable no_nonsense_engine"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/cimex/Projects/Computer_Graphics/no_nonsense_engine/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking C executable no_nonsense_engine"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/no_nonsense_engine.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

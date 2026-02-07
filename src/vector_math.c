@@ -9,16 +9,29 @@ vector4f scale_vec4f(vector4f v, float s) {
 }
 
 
-double dot_vec2f(vector2f a, vector2f b) {
+float dot_vec2f(vector2f a, vector2f b) {
     return a.x * b.x + a.y * b.y;
 }
 
-double dot_vec3f(vector3f a, vector3f b) {
+float dot_vec3f(vector3f a, vector3f b) {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-double dot_vec4f(vector4f a, vector4f b) {
+float dot_vec4f(vector4f a, vector4f b) {
     return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}
+
+vector3f cross_vec3f(vector3f a, vector3f b) {
+    return (vector3f) {a.y * b.z - a.z * b.y,
+                       a.z * b.x - a.x * b.z,
+                       a.x * b.y - a.y * b.x};
+}
+
+vector4f cross_vec4f(vector4f a, vector4f b) {
+    return (vector4f) {a.y * b.z - a.z * b.y,
+                       a.z * b.x - a.x * b.z,
+                       a.w * b.x - a.y * b.x,
+                       a.z * b.y - a.x * b.y};
 }
 
 vector3f add_vec3f(vector3f a, vector3f b) {
@@ -30,6 +43,7 @@ vector4f add_vec4f(vector4f a, vector4f b) {
 }
 
 
+
 vector3f subtract_vec3f(vector3f a, vector3f b) {
     return (vector3f){a.x - b.x, a.y - b.y, a.z - b.z}; 
 }
@@ -38,6 +52,19 @@ vector4f subtract_vec4f(vector4f a, vector4f b) {
     return (vector4f){a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w}; 
 }
 
+//Component wise multiplication
+vector3f multiply_vec3f(vector3f a, vector3f b) {
+    return (vector3f){a.x * b.x, a.y * b.y, a.z * b.z};
+}
+
+vector4f multiply_vec4f(vector4f a, vector4f b) {
+    return (vector4f){a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w};
+}
+
+
+vector2i subtract_vec2i(vector2i a, vector2i b) {
+    return (vector2i){a.x - b.x, a.y - b.y}; 
+}
 
 matrix4f multiply_mat4f(matrix4f a, matrix4f b) {
     return (matrix4f){
@@ -118,7 +145,7 @@ matrix3f inverse_mat3f(matrix3f m){
     vector3f r1 = cross(c, a);
     vector3f r2 = cross(a, b);
 
-    double invDet = 1.0f / dot_vec3f(r2, c);
+    float invDet = 1.0f / dot_vec3f(r2, c);
 
     return (matrix3f) {
         r0.x * invDet, r0.y * invDet, r0.z * invDet,
@@ -151,21 +178,21 @@ matrix4f inverse_mat4f(matrix4f m){
 }
 
 matrix2f inverse_mat2f(matrix2f m) {
-    double det = 1 / (m.n00 * m.n11 - m.n01 * m.n10);
+    float det = 1 / (m.n00 * m.n11 - m.n01 * m.n10);
     
     return (matrix2f) {m.n11/det, -m.n01/det,
                         m.n10/det, -m.n00/det};
 }
 
 
-double determinant(matrix3f m) {
+float determinant(matrix3f m) {
     return (m.n00 * (m.n11 * m.n22 - m.n12 * m.n21) +
             m.n01 * (m.n12 * m.n20 - m.n10 * m.n22) +
             m.n02 * (m.n10 * m.n21 - m.n11 * m.n20) );
             
 }
 
-double norm_vec3f(vector3f v) {
+float norm_vec3f(vector3f v) {
     return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 }
 
@@ -173,7 +200,7 @@ vector3f normalize_vec3f(vector3f v) {
     return (vector3f){v.x/norm_vec3f(v), v.y/norm_vec3f(v), v.z/norm_vec3f(v)};
 }
 
-double norm_vec4f(vector4f v) {
+float norm_vec4f(vector4f v) {
     return sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
 }
 vector4f normalize_vec4f(vector4f v) {

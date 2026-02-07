@@ -55,13 +55,13 @@ struct Model* read_model_lines(char *file_name) {
             line = strtok_r(NULL, delim, &saveptr1);
 
             char *endptr;
-            double x = strtod(line, &endptr);
+            float x = strtod(line, &endptr);
             model->vertices[vert_i].x = x;
             
             line = strtok_r(NULL, delim, &saveptr1);
             
             endptr = NULL;
-            double y = strtod(line, &endptr);
+            float y = strtod(line, &endptr);
             model->vertices[vert_i].y = y;
             line = strtok_r(NULL, delim, &saveptr1);
 
@@ -108,13 +108,13 @@ struct Model* read_model_lines(char *file_name) {
             line = strtok_r(NULL, delim, &saveptr1);
 
             char *endptr;
-            double x = strtod(line, &endptr);
+            float x = strtod(line, &endptr);
             model->normals[norm_i].x = x;
             
             line = strtok_r(NULL, delim, &saveptr1);
             
             endptr = NULL;
-            double y = strtod(line, &endptr);
+            float y = strtod(line, &endptr);
             model->normals[norm_i].y = y;
             line = strtok_r(NULL, delim, &saveptr1);
 
@@ -129,13 +129,13 @@ struct Model* read_model_lines(char *file_name) {
             line = strtok_r(NULL, delim, &saveptr1);
 
             char *endptr;
-            double x = strtod(line, &endptr);
+            float x = strtod(line, &endptr);
             model->textures[texture_i].x = x;
             
             line = strtok_r(NULL, delim, &saveptr1);
             
             endptr = NULL;
-            double y = strtod(line, &endptr);
+            float y = strtod(line, &endptr);
             model->textures[texture_i].y = y;
             line = strtok_r(NULL, delim, &saveptr1);
 
