@@ -59,26 +59,24 @@ int main(int argc, char **argv)
 
     bool run = true;
 
-    Shader *shader = malloc(sizeof(Shader));
-    shader->camera = malloc(sizeof(Camera));
-    shader->camera->position = (vector3f){0, 0, 2};
-    shader->camera->direction = (vector3f){0, 0, -1};
-    shader->camera->up = (vector3f){0, 1, 0};
-    shader->light = malloc(sizeof(Light));
-    shader->light->direction = (vector3f){1, 1, 1};
+    Shader shader;
+    shader.camera.position = (vector3f){0, 0, 2};
+    shader.camera.direction = (vector3f){0, 0, -1};
+    shader.camera.up = (vector3f){0, 1, 0};
+    shader.light.direction = (vector3f){1, 1, 1};
     
 
-    Model *obj_model  = read_model_lines("./src/models/diablo3_pose.obj");
-    obj_model->color = (vector4f){255.0f, 255.0f, 255.0f, 255.0f};
-    //obj_model->scale = 0.5f;
+    Model obj_model  = read_model_lines("./src/models/diablo3_pose.obj");
+    obj_model.color = (vector4f){255.0f, 255.0f, 255.0f, 255.0f};
+    //obj_model.scale = 0.5f;
 
-    shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction,shader->camera->position),shader->camera->up);
-    shader->Perspective = perspective(norm_vec3f(subtract_vec3f(shader->camera->position,shader->camera->direction)));
-    shader->Viewport = viewport(SCR_WIDTH / 16.f, SCR_HEIGHT / 16.f, SCR_WIDTH * 7.f / 8.f, SCR_HEIGHT * 7.f / 8.f);
+    shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction,shader.camera.position),shader.camera.up);
+    shader.Perspective = perspective(norm_vec3f(subtract_vec3f(shader.camera.position,shader.camera.direction)));
+    shader.Viewport = viewport(SCR_WIDTH / 16.f, SCR_HEIGHT / 16.f, SCR_WIDTH * 7.f / 8.f, SCR_HEIGHT * 7.f / 8.f);
 
-    Model *cube = malloc(sizeof(Model));
-    cube->color = (vector4f){75.0f, 255.0f, 75.0f, 255.0f};
-    //cube->scale = 0.2f;
+    Model cube;
+    cube.color = (vector4f){75.0f, 255.0f, 75.0f, 255.0f};
+    //cube.scale = 0.2f;
     int vert_count = 24;
 
     //Uses counter-clockwise winding like OpenGL
@@ -111,7 +109,7 @@ int main(int argc, char **argv)
         0.5f,  0.5f,  0.5f,          // G 23
     };
 
-    cube->triangles_size = 36;
+    cube.triangles_size = 36;
     int cube_indices[36] = {
         // front and back
         0, 3, 2,
@@ -129,30 +127,30 @@ int main(int argc, char **argv)
         20, 21, 22,
         22, 23, 20
     };
-    cube->vertices = malloc(vert_count * sizeof(vector3f));
+    cube.vertices = malloc(vert_count * sizeof(vector3f));
     int v_i = 0;
     for (int i = 0; i < 24; i++)
     {
 
-        cube->vertices[i].x = vertices[v_i];
+        cube.vertices[i].x = vertices[v_i];
         v_i++;
-        cube->vertices[i].y = vertices[v_i];
+        cube.vertices[i].y = vertices[v_i];
         v_i++;
-        cube->vertices[i].z = vertices[v_i];
+        cube.vertices[i].z = vertices[v_i];
         v_i++;
     }
 
-    cube->vertices_size = vert_count;
+    cube.vertices_size = vert_count;
 
     // vert indices
-    cube->triangles = cube_indices;
+    cube.triangles = cube_indices;
 
-    cube->normals = find_normals(cube->vertices, cube->vertices_size, cube->triangles, cube->triangles_size);
-    cube->norm_size = cube->triangles_size;
+    cube.normals = find_normals(cube.vertices, cube.vertices_size, cube.triangles, cube.triangles_size);
+    cube.norm_size = cube.triangles_size;
 
 
     int zbuf_size = SCR_WIDTH * SCR_HEIGHT;
-    float *zbuffer = malloc(sizeof(float) * zbuf_size);
+    float zbuffer[zbuf_size];
     for (int z = 0; z < zbuf_size; z++)
     {
         zbuffer[z] = -DBL_MAX;
@@ -162,25 +160,25 @@ int main(int argc, char **argv)
     Uint64 last_time;
     float dt = 0;
 
-    cube->angle = 60;
+    cube.angle = 60;
     float move = 0.05f;
 
     float cam_speed = 0.0;
 
 
-    image_view *color_buffer = malloc(sizeof(image_view));
-    color_buffer->width = SCR_WIDTH;
-    color_buffer->height = SCR_HEIGHT;
+    image_view color_buffer;
+    color_buffer.width = SCR_WIDTH;
+    color_buffer.height = SCR_HEIGHT;
     
-    obj_model->header_uv = malloc(sizeof(TGAHeader));
-    obj_model->header_diffuse = malloc(sizeof(TGAHeader));
-    obj_model->header_specular = malloc(sizeof(TGAHeader));
-    obj_model->uv = load_tga("./src/models/diablo3_pose_nm_tangent.tga", obj_model->header_uv);
-    obj_model->diffuse = load_tga("./src/models/diablo3_pose_diffuse.tga", obj_model->header_diffuse);
-    obj_model->specular = load_tga("./src/models/diablo3_pose_spec.tga", obj_model->header_specular);
+    obj_model.header_uv = malloc(sizeof(TGAHeader));
+    obj_model.header_diffuse = malloc(sizeof(TGAHeader));
+    obj_model.header_specular = malloc(sizeof(TGAHeader));
+    obj_model.uv = load_tga("./src/models/diablo3_pose_nm_tangent.tga", obj_model.header_uv);
+    obj_model.diffuse = load_tga("./src/models/diablo3_pose_diffuse.tga", obj_model.header_diffuse);
+    obj_model.specular = load_tga("./src/models/diablo3_pose_spec.tga", obj_model.header_specular);
     
     bool first_mouse = true;
-    float yaw   = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
+    float yaw   = -90.0f;	
     float pitch =  0.0f;
     float last_x =  800.0f / 2.0;
     float last_y =  600.0 / 2.0;
@@ -244,22 +242,22 @@ int main(int argc, char **argv)
                     }
                     //Update cam position and game objects modelview
                     if (event.key.key == SDLK_W) {
-                        shader->camera->position = add_vec3f(scale_vec3f(shader->camera->direction, cam_speed), shader->camera->position); 
-                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
+                        shader.camera.position = add_vec3f(scale_vec3f(shader.camera.direction, cam_speed), shader.camera.position); 
+                        shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
 
                     }
                     if (event.key.key == SDLK_S) {
-                        shader->camera->position = subtract_vec3f(shader->camera->position, scale_vec3f(shader->camera->direction, cam_speed));
-                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
+                        shader.camera.position = subtract_vec3f(shader.camera.position, scale_vec3f(shader.camera.direction, cam_speed));
+                        shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
                         
                     }
                     if (event.key.key == SDLK_A) {
-                        shader->camera->position = subtract_vec3f(shader->camera->position, scale_vec3f(normalize_vec3f(cross(shader->camera->direction, shader->camera->up)), cam_speed));
-                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
+                        shader.camera.position = subtract_vec3f(shader.camera.position, scale_vec3f(normalize_vec3f(cross(shader.camera.direction, shader.camera.up)), cam_speed));
+                        shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
                     }
                     if (event.key.key == SDLK_D) {
-                        shader->camera->position = add_vec3f(shader->camera->position, scale_vec3f(normalize_vec3f(cross(shader->camera->direction, shader->camera->up)), cam_speed));
-                        shader->ModelView = lookat(shader->camera->position, add_vec3f(shader->camera->direction, shader->camera->position), shader->camera->up);
+                        shader.camera.position = add_vec3f(shader.camera.position, scale_vec3f(normalize_vec3f(cross(shader.camera.direction, shader.camera.up)), cam_speed));
+                        shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
                     }
 
 
@@ -279,7 +277,7 @@ int main(int argc, char **argv)
         }
 
         // Sets color buffer for screen
-        color_buffer->pixels = (color4ub *)draw_surface->pixels;
+        color_buffer.pixels = (color4ub *)draw_surface->pixels;
 
         mu_begin(ctx);
         if (mu_begin_window(ctx, "Transformations", mu_rect(40, 40, 240, 300)))  {
@@ -306,13 +304,13 @@ int main(int argc, char **argv)
 
         // Set background color
         vector4f backgroundColor = {0.68f, 0.75f, 0.83f, 1.0f};
-        clear(color_buffer, &backgroundColor);
-        color_buffer->at = image_view_at;
+        clear(&color_buffer, &backgroundColor);
+        color_buffer.at = image_view_at;
         
 
         //***************************WORLD SCENE RENDERER***************************
-
-        render_faces(shader, obj_model, zbuffer, color_buffer, true, 0);
+        //obj_model.angle += 1.0f;
+        render_faces(&shader, &obj_model, zbuffer, &color_buffer, true, 0);
         for (int z = 0; z < zbuf_size; z++)
         {
             zbuffer[z] = -DBL_MAX;
@@ -345,12 +343,12 @@ int main(int argc, char **argv)
                     dst.w = src.w;
                     dst.h = src.h;
 
-                    //render_gui_texture(color_buffer, dst, src, cmd->text.color);
+                    //render_gui_texture(&color_buffer, dst, src, cmd->text.color);
                     dst.x += dst.w;
                 }
             }
             if (cmd->type == MU_COMMAND_RECT) {
-                //render_gui(color_buffer, cmd->rect.rect, atlas[ATLAS_WHITE], cmd->rect.color);
+                //render_gui(&color_buffer, cmd->rect.rect, atlas[ATLAS_WHITE], cmd->rect.color);
 
             }
             if (cmd->type == MU_COMMAND_ICON) {
@@ -358,7 +356,7 @@ int main(int argc, char **argv)
                 int x = cmd->icon.rect.x + (cmd->icon.rect.w - src.w) / 2;
                 int y = cmd->icon.rect.y + (cmd->icon.rect.h - src.h) / 2;
 
-                //render_gui_texture(color_buffer, mu_rect(x, y, src.w, src.h), src, cmd->icon.color);
+                //render_gui_texture(&color_buffer, mu_rect(x, y, src.w, src.h), src, cmd->icon.color);
             }
             if (cmd->type == MU_COMMAND_CLIP) {
                 SDL_Rect clip = {
@@ -386,29 +384,20 @@ int main(int argc, char **argv)
     }
     free(ctx);
 
-    free(color_buffer);
 
-    free(zbuffer);
-    free(shader->camera);
-    free(shader->light);
-    free(shader);
-
-
-    free(cube->vertices);
-    free(cube->normals);
-    free(cube);
+    free(cube.vertices);
+    free(cube.normals);
     
-    free(obj_model->triangles);
-    free(obj_model->uv);
-    free(obj_model->diffuse);
-    free(obj_model->specular);
-    free(obj_model->header_diffuse);
-    free(obj_model->header_uv);
-    free(obj_model->header_specular);
-    free(obj_model->textures);
-    free(obj_model->vertices);
-    free(obj_model->normals);
-    free(obj_model);
+    free(obj_model.triangles);
+    free(obj_model.uv);
+    free(obj_model.diffuse);
+    free(obj_model.specular);
+    free(obj_model.header_diffuse);
+    free(obj_model.header_uv);
+    free(obj_model.header_specular);
+    free(obj_model.textures);
+    free(obj_model.vertices);
+    free(obj_model.normals);
     
 
 

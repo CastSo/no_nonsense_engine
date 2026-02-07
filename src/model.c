@@ -1,23 +1,23 @@
 #include "model.h"
 
 
-struct Model* read_model_lines(char *file_name) {
+struct Model read_model_lines(char *file_name) {
     FILE *fptr = fopen(file_name, "r");
     if (fptr == NULL) {
         perror("Unable to open file");
         exit(1);
     }
 
-    Model *model = malloc(sizeof(Model));
+    Model model;
 
     int vertices_size;
-    model->vertices = malloc(100000 * sizeof(vector3f));
+    model.vertices = malloc(100000 * sizeof(vector3f));
     int triangles_size;
-    model->triangles = malloc(100000 * sizeof(int));
+    model.triangles = malloc(100000 * sizeof(int));
     int normals_size;
-    model->normals = malloc(100000 * sizeof(vector3f));
+    model.normals = malloc(100000 * sizeof(vector3f));
     int texture_size;
-    model->textures = malloc(100000 * sizeof(vector3f));
+    model.textures = malloc(100000 * sizeof(vector3f));
 
 
     char *buffer;
@@ -56,17 +56,17 @@ struct Model* read_model_lines(char *file_name) {
 
             char *endptr;
             float x = strtod(line, &endptr);
-            model->vertices[vert_i].x = x;
+            model.vertices[vert_i].x = x;
             
             line = strtok_r(NULL, delim, &saveptr1);
             
             endptr = NULL;
             float y = strtod(line, &endptr);
-            model->vertices[vert_i].y = y;
+            model.vertices[vert_i].y = y;
             line = strtok_r(NULL, delim, &saveptr1);
 
             endptr = NULL;
-            model->vertices[vert_i].z = strtod(line, &endptr);
+            model.vertices[vert_i].z = strtod(line, &endptr);
             line = strtok_r(NULL, delim, &saveptr1);
 
             vert_i++;
@@ -89,8 +89,8 @@ struct Model* read_model_lines(char *file_name) {
                     int v = atoi(vert);
                     if(v != 0) {
                         //obj starts at 1 so convert to index starting at 0
-                        model->triangles[face_i] = v-1;
-                       // printf("%d, ", model->triangles[face_i]);
+                        model.triangles[face_i] = v-1;
+                       // printf("%d, ", model.triangles[face_i]);
                         face_i++;
                     }
                     vert = strtok_r(NULL, "/", &saveptr2);
@@ -109,19 +109,19 @@ struct Model* read_model_lines(char *file_name) {
 
             char *endptr;
             float x = strtod(line, &endptr);
-            model->normals[norm_i].x = x;
+            model.normals[norm_i].x = x;
             
             line = strtok_r(NULL, delim, &saveptr1);
             
             endptr = NULL;
             float y = strtod(line, &endptr);
-            model->normals[norm_i].y = y;
+            model.normals[norm_i].y = y;
             line = strtok_r(NULL, delim, &saveptr1);
 
             endptr = NULL;
-            model->normals[norm_i].z = strtod(line, &endptr);
+            model.normals[norm_i].z = strtod(line, &endptr);
             line = strtok_r(NULL, delim, &saveptr1);
-            //printf("%f, %f, %f\n",  model->normals[norm_i].x, model->normals[norm_i].y, model->normals[norm_i].z);
+            //printf("%f, %f, %f\n",  model.normals[norm_i].x, model.normals[norm_i].y, model.normals[norm_i].z);
             norm_i++;
 
         } else if (strcmp(line, "vt") == 0) {
@@ -130,19 +130,19 @@ struct Model* read_model_lines(char *file_name) {
 
             char *endptr;
             float x = strtod(line, &endptr);
-            model->textures[texture_i].x = x;
+            model.textures[texture_i].x = x;
             
             line = strtok_r(NULL, delim, &saveptr1);
             
             endptr = NULL;
             float y = strtod(line, &endptr);
-            model->textures[texture_i].y = y;
+            model.textures[texture_i].y = y;
             line = strtok_r(NULL, delim, &saveptr1);
 
             endptr = NULL;
-            model->textures[texture_i].z = strtod(line, &endptr);
+            model.textures[texture_i].z = strtod(line, &endptr);
             line = strtok_r(NULL, delim, &saveptr1);
-            //printf("%f, %f, %f\n",  model->textures[texture_i].x, model->textures[texture_i].y, model->textures[texture_i].z);        
+            //printf("%f, %f, %f\n",  model.textures[texture_i].x, model.textures[texture_i].y, model.textures[texture_i].z);        
             texture_i++;
 
         }  
@@ -153,10 +153,10 @@ struct Model* read_model_lines(char *file_name) {
     fclose(fptr);
     free(buffer);
     
-    model->vertices_size = vert_i;
-    model->triangles_size = face_i;
-    model->norm_size = norm_i;
-    model->texture_size = texture_i;
+    model.vertices_size = vert_i;
+    model.triangles_size = face_i;
+    model.norm_size = norm_i;
+    model.texture_size = texture_i;
 
     
     return model;

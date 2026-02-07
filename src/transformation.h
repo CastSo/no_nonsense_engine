@@ -18,8 +18,8 @@ typedef struct Light {
 
 
 typedef struct  Shader {
-    Camera *camera;
-    Light *light;
+    Camera camera;
+    Light light;
     vector4f color;
     matrix4f ModelView;
     matrix4f Perspective;

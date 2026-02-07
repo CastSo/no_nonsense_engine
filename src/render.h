@@ -23,13 +23,12 @@ void sort_y_coordinates(vector3f* vector, int n);
 
 vector4f edge_init(Edge* self, vector2f v0, vector2f v1, vector2f origin);
 float twice_triangle_area(vector2f a, vector2f b, const vector2f c);
-void triangle_scanline(int ax, int ay, int bx, int by, int cx, int cy, image_view *color_buffer, vector4f *color);
 void triangle2D(image_view* color_buffer, vector3f clip[3], color4ub color, bool is_backface_cull);
 float signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy);
 void triangle2D_texture(image_view* color_buffer, vector3f clip[3], vector3f tex[3], color4ub color, bool is_backface_cull);
 void triangle3D(Shader *shader,  Model *model, float *zbuffer, image_view *color_buffer,  bool is_backface_cull);
+void render_pixel(Shader* shader, Model* model, float *zbuffer, image_view* color_buffer, float x, float y, vector3f barycoord);
 
-struct Model* read_model_lines(char *file_name);
 void render_faces(Shader *shader, Model *model, float *zbuffer, image_view* color_buffer,  bool is_bf_cull, float move);
 void render_wireframe(Model* model, image_view* color_buffer);
 

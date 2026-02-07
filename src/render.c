@@ -1,6 +1,24 @@
 #include "render.h"
 #include <omp.h>
 
+
+vector4f edge_init(Edge* self, vector2f v0, vector2f v1, vector2f origin) {
+    //Edge
+    float A = v0.y - v1.y, B = v1.x - v0.x;
+    float C = v0.x * v1.y - v0.y * v1.x;
+
+    //Step deltas
+    self->one_step_x = scale_vec4f((vector4f){A, A, A, A}, self->step_x_size);
+    self->one_step_y = scale_vec4f((vector4f){B, B, B, B}, self->step_y_size);
+
+    //x/y values for initial pixel block
+    vector4f x = add_vec4f((vector4f){origin.x, origin.x, origin.x, origin.x}, (vector4f){0, 1, 2, 3});
+    vector4f y = (vector4f){origin.y, origin.y, origin.y, origin.y};
+
+    //Edge function values at origin
+    return add_vec4f(add_vec4f(multiply_vec4f((vector4f){A, A, A, A}, x), multiply_vec4f((vector4f){B, B, B, B}, y)), (vector4f){C, C, C, C});
+}
+
 //Fills entire pixel buffer with a color
 void clear(const image_view *color_buffer, const vector4f *color) {
     color4ub* ptr = color_buffer->pixels;
@@ -20,12 +38,6 @@ void render_tga(image_view *color_buffer, image_view *img_buffer) {
 }
 
 
-vector3f convert_to_ndc(vector3f vec, int width, int height) {
-    return (vector3f) { (1.0f + vec.x) * width/ 2,
-                        (1.0f - vec.y) * height/ 2,
-                        vec.z};
-}
-
 
 void render_faces(Shader *shader, Model *model, float *zbuffer, image_view* color_buffer, bool is_bf_cull, float move) {
 
@@ -37,11 +49,13 @@ void render_faces(Shader *shader, Model *model, float *zbuffer, image_view* colo
             vector3f vec = model->vertices[model->triangles[v+(f*3)]];
             vector4f position = multiply_mat4f_vec4f(shader->ModelView, (vector4f){vec.x, vec.y, vec.z, 1.});
             shader->clip[f] = multiply_mat4f_vec4f(shader->Perspective, position); // in clip coordinates
-            
+            //shader->clip[f] = rotateY(shader->clip[f], model->angle);
             //Uses vt from model
             shader->varying_uv[f] = model->textures[model->triangles[v+(f*3+1)]];
             vector3f n = model->textures[model->triangles[v+(f*3+2)]];
             shader->norm[f] = multiply_mat4f_vec4f(inverse_mat4f(shader->ModelView), (vector4f){n.x, n.y, n.z, 0});
+
+            
             
         }
 
@@ -210,75 +224,11 @@ void line(int ax, int ay, int bx, int by, image_view *color_buffer, vector4f *co
 
 
 
-void triangle_scanline(int ax, int ay, int bx, int by, int cx, int cy, image_view *color_buffer, vector4f *color) {
-    vector3f* vectors = (vector3f *)malloc(3* sizeof(vector3f));
-    vectors[0].x = ax;
-    vectors[0].y = ay;
-    vectors[1].x = bx;
-    vectors[1].y = by;
-    vectors[2].x = cx;
-    vectors[2].y = cy;
-
-    sort_y_coordinates(vectors, 3);
-    vector3f vector_min = vectors[0];
-    vector3f vector_mid = vectors[1];
-    vector3f vector_max = vectors[2];
-    free(vectors);
-
-
-    //printf("%f, %f, %f \n", vector_min.y, vector_mid.y, vector_max.y);
-    //Skips undefined slope
-   if(vector_max.x - vector_min.x == 0 )
-    {
-        
-        //printf("%f, %f, %f \n", vector_min.x, vector_mid.x, vector_max.x);    
-        return;
-    }
-
-    //y = mx+b
-    float m1 = (vector_max.y - vector_min.y)/(vector_max.x - vector_min.x);
-    float b1 = vector_min.y - (vector_min.x * m1);
-
-    //Skips undefined slope
-    if (vector_max.x - vector_mid.x == 0)
-        return;
-
-    float m2 = (vector_max.y - vector_mid.y)/(vector_max.x - vector_mid.x);
-    float b2 = vector_mid.y - (vector_mid.x * m2);
-    //Loops draw two triangles
-    for(int row = vector_mid.y; row < vector_max.y; row++){
-        int y = row;
-        int Pt1_x = (y-b1) / m1;
-        int Pt2_x = (y-b2) / m2;
-
-        line(Pt1_x, y, Pt2_x, y, color_buffer, color);
-    
-    }
-    
-    //Skips undefined slope
-    if (vector_mid.x - vector_min.x == 0)
-        return;
-
-    float m3 = (vector_mid.y - vector_min.y)/(vector_mid.x - vector_min.x);
-    float b3 = vector_min.y - (vector_min.x * m3);
-    for(int row = vector_min.y; row < vector_mid.y; row++){
-        int y = row;
-        int Pt1_x = (y-b1) / m1;
-        int Pt2_x = (y-b3) / m3;
-
-        line(Pt1_x, y, Pt2_x, y, color_buffer, color);
-        
-     }
-
-     
-
-}
-
 //Uses bounding box rasterization
 void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *color_buffer, bool is_backface_cull) {
 
-    vector3f sun_direction = shader->light->direction;
-    vector3f cam_pos = shader->camera->position;
+    vector3f sun_direction = shader->light.direction;
+    vector3f cam_pos = shader->camera.position;
 
 
     vector4f ndc[3] = {
@@ -300,10 +250,6 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
         v[2].x, v[2].y, 1.      
     };
 
-    // Triangle setup
-    float A01 = v[0].y - v[1].y, B01 = v[1].x - v[0].x;
-    float A12 = v[1].y - v[2].y, B12 = v[2].x - v[1].x;
-    float A20 = v[2].y - v[0].y, B20 = v[0].x - v[2].x;
 
     //backface culling
     if(determinant(ABC) < 1 && is_backface_cull) return;
@@ -329,7 +275,7 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
     vector4f w0_row = edge_init(&e12, (vector2f){v[1].x, v[1].y}, (vector2f){v[2].x, v[2].y}, p);
     vector4f w1_row = edge_init(&e20, (vector2f){v[2].x, v[2].y}, (vector2f){v[0].x, v[0].y}, p);
     vector4f w2_row = edge_init(&e01, (vector2f){v[0].x, v[0].y}, (vector2f){v[1].x, v[1].y}, p);
-    double total_area = twice_triangle_area((vector2f){v[0].x, v[0].y},(vector2f){v[1].x, v[1].y}, (vector2f){v[2].x, v[2].y});
+    double twice_total_area = twice_triangle_area((vector2f){v[0].x, v[0].y},(vector2f){v[1].x, v[1].y}, (vector2f){v[2].x, v[2].y});
 
     //#pragma omp parallel for
     for (p.y = bbminy; p.y <= bbmaxy; p.y += step_y_size){
@@ -337,96 +283,40 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
         vector4f w1 = w1_row;
         vector4f w2 = w2_row;
 
-         for (p.x = bbminx; p.x <= bbmaxx; p.x+= step_x_size){
+        for (p.x = bbminx; p.x <= bbmaxx; p.x += step_x_size){
 
-            bool mask = w0.x < 0 || w1.x < 0 || w2.x < 0 || w0.y < 0 || w1.y < 0 || w2.y < 0 ||
-            w0.z < 0 || w1.z < 0 || w2.z < 0 || w0.w < 0 || w1.w < 0 || w2.w < 0; 
-            //If outside triangle
-            if(mask)
-            {
-                w0 = add_vec4f(w0, e12.one_step_y);
-                w1 = add_vec4f(w1, e20.one_step_y);
-                w2 = add_vec4f(w2, e01.one_step_y); 
-                continue;
+        //Groups by 4 pixels wide and 1 pixel high
+        bool mask[4] = {(w0.x >= 0 && w1.x >= 0 && w2.x >= 0), 
+                        (w0.y >= 0 && w1.y >= 0 && w2.y >= 0), 
+                        (w0.z >= 0 && w1.z >= 0 && w2.z >= 0), 
+                        (w0.w >= 0 && w1.w >= 0 && w2.w >= 0)}; 
+        bool any_mask = mask[0] | mask[1] | mask[2]  | mask[3];
+        vector3f all_bc[4] = {(vector3f){w0.x , w1.x , w2.x}, 
+                              (vector3f){w0.y , w1.y , w2.y},  
+                              (vector3f){w0.z , w1.z , w2.z}, 
+                              (vector3f){w0.w , w1.w , w2.w}}; 
+
+
+        if(any_mask){
+            //#pragma omp parallel for
+            for(int i = 0; i < 4; i++){
+                if(!mask[i])
+                    continue;
+                vector3f bc = scale_vec3f((vector3f){all_bc[i].x, all_bc[i].y, all_bc[i].z}, 1/twice_total_area);
+
+                render_pixel(shader, model, zbuffer, color_buffer, p.x+i, p.y, bc);
+
             }
-
-            //Barycentric coordinates
-            //vector3f bc = multiply_mat3f_vec3f((inverse_mat3f(ABC)), (vector3f){(float)p.x, (float) p.y, 1.});
-            
-            //y grows downward
-            int normal_y = color_buffer->height-p.y-1;
-            //normalize from screen space
-           vector3f bc = scale_vec3f((vector3f){w0.x, w1.x, w2.x}, 1/total_area);
-           //printf("%f, %f, %f\n", bc.x, bc.y, bc.z);
-
-            float z = dot_vec3f(bc, (vector3f){ndc[0].z, ndc[1].z, ndc[2].z});
-            //Discard pixel p because inferior to z;
-            if (z <= zbuffer[((int)p.x)+normal_y*color_buffer->width])
-            {    
-                w0 = add_vec4f(w0, e12.one_step_y);
-                w1 = add_vec4f(w1, e20.one_step_y);
-                w2 = add_vec4f(w2, e01.one_step_y); 
-                continue;
-            }
-
-            zbuffer[((int)p.x)+normal_y*color_buffer->width] = z;
-
-            //*******Find fragment colors using normal data and perspective transformation*******
-           //Setup normals in tangent space
-            vector4f e1 = subtract_vec4f(shader->clip[1], shader->clip[0]);
-            vector4f e0 = subtract_vec4f(shader->clip[2], shader->clip[0]);
-            matrix2x4f E = {e0.x, e0.y, e0.z, 0.f, 
-                            e1.x, e1.y, e1.z, 0.f};
-            vector3f u0 = subtract_vec3f(shader->varying_uv[1], shader->varying_uv[0]);
-            vector3f u1 = subtract_vec3f(shader->varying_uv[2], shader->varying_uv[0]);
-            matrix2f U = {u0.x, u0.y,
-                        u1.x, u1.y};
-            matrix2f invert_U = inverse_mat2f(U);
-            matrix2x4f T = multiply_mat4f_mat2x4f(invert_U, E);
-            
-            vector4f interpolated_norm =  normalize_vec4f(add_vec4f(add_vec4f(scale_vec4f(shader->norm[0], bc.x), scale_vec4f(shader->norm[1],bc.y)), scale_vec4f(shader->norm[2],bc.z)));
-            matrix4f D = {T.n00, T.n01, T.n02, T.n03, // tangent vector
-                         T.n10, T.n11, T.n12, T.n13, //bitangent vector
-                        interpolated_norm.x, interpolated_norm.y, interpolated_norm.z, interpolated_norm.w,
-                        0, 0, 0, 1
-                        };
-                        
-            vector3f uv = add_vec3f(add_vec3f(scale_vec3f(shader->varying_uv[0], bc.x), scale_vec3f(shader->varying_uv[1], bc.y)), scale_vec3f(shader->varying_uv[2], bc.z));
-
-
-            vector4f nm = normal(model->header_uv, model->uv, (vector2f){uv.x, uv.y});
-            
-            vector4f vec_n_nm = normalize_vec4f(multiply_mat4f_vec4f(transpose_mat4f(D), nm));
-
-            vector4f vec_l = normalize_vec4f( (vector4f){sun_direction.x, sun_direction.y, sun_direction.z, 0.0f}); // direction toward sun
-            
-            int e = 35;
-            vector4f vec_v = normalize_vec4f((vector4f){cam_pos.x, cam_pos.y, cam_pos.z, 0.0f}); //fragment to sun
-            vector4f vec_r = normalize_vec4f(subtract_vec4f(scale_vec4f(scale_vec4f(vec_n_nm, dot_vec4f(vec_n_nm, vec_l)), 2), vec_l)); //reflection of sun
-
-            //Phong colors
-            float diffuse = fmax(0, dot_vec4f(vec_n_nm, vec_l));
-            float ambient = .3;
-            color4ub spec_color = sample2D(model->header_specular, model->specular, (vector2f){uv.x, uv.y});
-            color4ub diff_color = sample2D(model->header_diffuse, model->diffuse, (vector2f){uv.x, uv.y});
-            float specular = (.5+2.*spec_color.r/255.) * pow(fmax(0, dot_vec4f(vec_r, vec_v)), e);
-
-            
-            float phong = ambient + diffuse + specular;
-           
-            *color_buffer->at(color_buffer, p.x, normal_y) = (color4ub) {phong * diff_color.r, phong * diff_color.g, phong * diff_color.b,  model->color.w};
-
-            
-            
-            //step to right
-            w0 = add_vec4f(w0, e12.one_step_y);
-            w1 = add_vec4f(w1, e20.one_step_y);
-            w2 = add_vec4f(w2, e01.one_step_y); 
         }
-        //row step
-        w0_row = add_vec4f(w0, e12.one_step_x);
-        w1_row = add_vec4f(w1, e20.one_step_x);
-        w2_row = add_vec4f(w2, e01.one_step_x); 
+        //step to right
+        w0 = add_vec4f(w0, e12.one_step_x);
+        w1 = add_vec4f(w1, e20.one_step_x);
+        w2 = add_vec4f(w2, e01.one_step_x); 
+    }
+    //row step
+    w0_row = add_vec4f(w0_row, e12.one_step_y);
+    w1_row = add_vec4f(w1_row, e20.one_step_y);
+    w2_row = add_vec4f(w2_row, e01.one_step_y); 
     }
 
 }
@@ -544,43 +434,20 @@ void triangle2D_texture(image_view* color_buffer, vector3f clip[3], vector3f tex
 
 }
 
-vector4f edge_init(Edge* self, vector2f v0, vector2f v1, vector2f origin) {
-    //Edge
-    float A = v0.y - v1.y, B = v1.x - v0.x;
-    float C = v0.x * v1.y - v0.y * v1.x;
 
-    //Step deltas
-    self->one_step_x = scale_vec4f((vector4f){A, A, A, A}, self->step_x_size);
-    self->one_step_y = scale_vec4f((vector4f){B, B, B, B}, self->step_y_size);
 
-    //x/y values for initial pixel block
-    vector4f x = add_vec4f((vector4f){origin.x, origin.x, origin.x, origin.x}, (vector4f){0, 1, 2, 3});
-    vector4f y = (vector4f){origin.y, origin.y, origin.y, origin.y};
-
-    //Edge function values at origin
-    return add_vec4f(add_vec4f(multiply_vec4f((vector4f){A, A, A, A}, x), multiply_vec4f((vector4f){B, B, B, B}, y)), (vector4f){C, C, C, C});
-}
-
-void render_pixels(Shader* shader, Model* model, image_view* color_buffer, float *zbuffer, 
-                int x, int y, vector3f screen_barycoord, float total_area) {
+void render_pixel(Shader* shader, Model* model, float* zbuffer, image_view* color_buffer,  float x, float y, vector3f barycoord) {
         //y grows downward
-        int normal_y = color_buffer->height-y-1;    
-    
-    //normalize from screen space
-        vector3f bc = scale_vec3f((vector3f){screen_barycoord.x, screen_barycoord.x, screen_barycoord.x}, 1/total_area);
-        //printf("%f, %f, %f\n", bc.x, bc.y, bc.z);
+        int normal_y = color_buffer->height-y-1;  
+        float z = dot_vec3f(barycoord, (vector3f){shader->ndc[0].z, shader->ndc[1].z, shader->ndc[2].z});
+        //Discard pixel p because inferior to z;
+        if (z <= zbuffer[(int)(x+normal_y*color_buffer->width)])
+        {    
+            return;
+        }
 
-        // float z = dot_vec3f(bc, (vector3f){shader->ndc[0].z, shader->ndc[1].z, shader->ndc[2].z});
-        // //Discard pixel p because inferior to z;
-        // if (z <= zbuffer[((int)p.x)+normal_y*color_buffer->width])
-        // {    
-        //     w0 = add_vec4f(w0, e12.one_step_y);
-        //     w1 = add_vec4f(w1, e20.one_step_y);
-        //     w2 = add_vec4f(w2, e01.one_step_y); 
-        //     continue;
-        // }
+        zbuffer[(int)(x+normal_y*color_buffer->width)] = z;  
 
-        // zbuffer[((int)p.x)+normal_y*color_buffer->width] = z;
         //*******Find fragment colors using normal data and perspective transformation*******
         //Setup normals in tangent space
         vector4f e1 = subtract_vec4f(shader->clip[1], shader->clip[0]);
@@ -594,24 +461,24 @@ void render_pixels(Shader* shader, Model* model, image_view* color_buffer, float
         matrix2f invert_U = inverse_mat2f(U);
         matrix2x4f T = multiply_mat4f_mat2x4f(invert_U, E);
         
-        vector4f interpolated_norm =  normalize_vec4f(add_vec4f(add_vec4f(scale_vec4f(shader->norm[0], bc.x), scale_vec4f(shader->norm[1],bc.y)), scale_vec4f(shader->norm[2],bc.z)));
+        vector4f interpolated_norm =  normalize_vec4f(add_vec4f(add_vec4f(scale_vec4f(shader->norm[0], barycoord.x), scale_vec4f(shader->norm[1],barycoord.y)), scale_vec4f(shader->norm[2],barycoord.z)));
         matrix4f D = {T.n00, T.n01, T.n02, T.n03, // tangent vector
                         T.n10, T.n11, T.n12, T.n13, //bitangent vector
                     interpolated_norm.x, interpolated_norm.y, interpolated_norm.z, interpolated_norm.w,
                     0, 0, 0, 1
                     };
                     
-        vector3f uv = add_vec3f(add_vec3f(scale_vec3f(shader->varying_uv[0], bc.x), scale_vec3f(shader->varying_uv[1], bc.y)), scale_vec3f(shader->varying_uv[2], bc.z));
+        vector3f uv = add_vec3f(add_vec3f(scale_vec3f(shader->varying_uv[0], barycoord.x), scale_vec3f(shader->varying_uv[1],barycoord.y)), scale_vec3f(shader->varying_uv[2], barycoord.z));
 
 
         vector4f nm = normal(model->header_uv, model->uv, (vector2f){uv.x, uv.y});
         
         vector4f vec_n_nm = normalize_vec4f(multiply_mat4f_vec4f(transpose_mat4f(D), nm));
 
-        vector4f vec_l = normalize_vec4f( (vector4f){shader->light->direction.x, shader->light->direction.y, shader->light->direction.z, 0.0f}); // direction toward sun
+        vector4f vec_l = normalize_vec4f( (vector4f){shader->light.direction.x, shader->light.direction.y, shader->light.direction.z, 0.0f}); // direction toward sun
         
         int e = 35;
-        vector4f vec_v = normalize_vec4f((vector4f){shader->camera->position.x, shader->camera->position.y, shader->camera->position.z, 0.0f}); //fragment to sun
+        vector4f vec_v = normalize_vec4f((vector4f){shader->camera.position.x, shader->camera.position.y, shader->camera.position.z, 0.0f}); //fragment to sun
         vector4f vec_r = normalize_vec4f(subtract_vec4f(scale_vec4f(scale_vec4f(vec_n_nm, dot_vec4f(vec_n_nm, vec_l)), 2), vec_l)); //reflection of sun
 
         //Phong colors
