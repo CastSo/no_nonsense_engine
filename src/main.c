@@ -156,9 +156,12 @@ int main(int argc, char **argv)
         zbuffer[z] = -DBL_MAX;
     }
 
-    Uint64 current_time = SDL_GetPerformanceCounter();
-    Uint64 last_time;
-    float dt = 0;
+    //Time step setup
+    uint32_t current_time = 0;
+    uint32_t last_time;
+    int FPS = 30;
+    int32_t tick_interval = 1000/FPS;
+    float delta_time = 0;
 
     cube.angle = 60;
     float move = 0.05f;
@@ -194,10 +197,15 @@ int main(int argc, char **argv)
         
         SDL_Event event;
         last_time = current_time;
-        current_time = SDL_GetPerformanceCounter();
+        current_time = SDL_GetTicks();
 
         
-        dt = (float)((current_time - last_time) * 10000 / (float)SDL_GetPerformanceFrequency());
+        delta_time = current_time - last_time;
+        int32_t time_to_sleep = tick_interval - delta_time;
+        if(time_to_sleep > 0) {
+            SDL_Delay(time_to_sleep);
+        }
+
         cam_speed = 0.8f;
 
         while (SDL_PollEvent(&event))
@@ -314,7 +322,7 @@ int main(int argc, char **argv)
         
 
         //***************************WORLD SCENE RENDERER***************************
-        obj_model.angle += 1.0f;
+        obj_model.angle += radian(90.0f);
         render_faces(&shader, &obj_model, zbuffer, &color_buffer, false, 0);
         for (int z = 0; z < zbuf_size; z++)
         {

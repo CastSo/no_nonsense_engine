@@ -283,12 +283,12 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
 
 
     //#pragma omp parallel for
-    for (p.y = bbminy; p.y <= bbmaxy; p.y += step_y_size){
+    for (p.y = fmax(bbminy, 0); p.y <=  fmin(bbmaxy, color_buffer->height-1); p.y += step_y_size){
         vector4f w0 = w0_row;
         vector4f w1 = w1_row;
         vector4f w2 = w2_row;
 
-        for (p.x = bbminx; p.x <= bbmaxx; p.x += step_x_size){
+        for (p.x = fmax(bbminx, 0); p.x <=  fmin(bbmaxx, color_buffer->width-1); p.x += step_x_size){
             //Groups by 4 pixels wide and 1 pixel high
             bool mask[4] = {(w0.x >= 0 && w1.x >= 0 && w2.x >= 0), 
                             (w0.y >= 0 && w1.y >= 0 && w2.y >= 0), 
@@ -307,7 +307,7 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
                         continue;
                     vector3f bc = scale_vec3f((vector3f){all_bc[i].x, all_bc[i].y, all_bc[i].z}, 1/twice_total_area);
 
-                    render_pixel(shader, model, zbuffer, color_buffer, p.x+i, p.y, bc);
+                    render_pixel(shader, model, zbuffer, color_buffer, fmin(p.x+i, color_buffer->width-1), fmin(p.y, color_buffer->height-1), bc);
 
                 }
             }
