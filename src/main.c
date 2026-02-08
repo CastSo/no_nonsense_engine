@@ -219,7 +219,12 @@ int main(int argc, char **argv)
             case SDL_EVENT_QUIT:
                 run = false;
                 break;
-            case SDL_EVENT_MOUSE_MOTION: mu_input_mousemove(ctx, event.motion.x, event.motion.y); break;
+            case SDL_EVENT_MOUSE_MOTION: {
+                mu_input_mousemove(ctx, event.motion.x, event.motion.y); 
+
+
+                break;
+            }
             case SDL_EVENT_MOUSE_WHEEL: mu_input_scroll(ctx, 0, event.wheel.y * -30); break;
             case SDL_EVENT_TEXT_INPUT: mu_input_text(ctx, event.text.text); break;
 
@@ -309,8 +314,8 @@ int main(int argc, char **argv)
         
 
         //***************************WORLD SCENE RENDERER***************************
-        //obj_model.angle += 1.0f;
-        render_faces(&shader, &obj_model, zbuffer, &color_buffer, true, 0);
+        obj_model.angle += 1.0f;
+        render_faces(&shader, &obj_model, zbuffer, &color_buffer, false, 0);
         for (int z = 0; z < zbuf_size; z++)
         {
             zbuffer[z] = -DBL_MAX;

@@ -112,5 +112,5 @@ vector4f translate(vector4f v, vector3f t) {
                     0, 1, 0, t.y,
                     0, 0, 1, t.z,
                     0, 0, 0,  1};
-    return multiply_mat4f_vec4f(mat, (vector4f){v.x, v.y, v.z, 1});
+    return multiply_mat4f_vec4f(mat, v);
 }

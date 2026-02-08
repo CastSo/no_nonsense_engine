@@ -47,16 +47,20 @@ void render_faces(Shader *shader, Model *model, float *zbuffer, image_view* colo
 
         for (int f = 0; f < 3; f++) {
             vector3f vec = model->vertices[model->triangles[v+(f*3)]];
-            vector4f position = multiply_mat4f_vec4f(shader->ModelView, (vector4f){vec.x, vec.y, vec.z, 1.});
+            vector4f local = (vector4f){vec.x, vec.y, vec.z, 1.};
+            
+            //Transformations in local space
+            local = rotateY(local, model->angle);
+
+            vector4f position = multiply_mat4f_vec4f(shader->ModelView, local);
             shader->clip[f] = multiply_mat4f_vec4f(shader->Perspective, position); // in clip coordinates
-            //shader->clip[f] = rotateY(shader->clip[f], model->angle);
+            
+            
             //Uses vt from model
             shader->varying_uv[f] = model->textures[model->triangles[v+(f*3+1)]];
             vector3f n = model->textures[model->triangles[v+(f*3+2)]];
             shader->norm[f] = multiply_mat4f_vec4f(inverse_mat4f(shader->ModelView), (vector4f){n.x, n.y, n.z, 0});
 
-            
-            
         }
 
         
@@ -277,6 +281,7 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
     vector4f w2_row = edge_init(&e01, (vector2f){v[0].x, v[0].y}, (vector2f){v[1].x, v[1].y}, p);
     double twice_total_area = twice_triangle_area((vector2f){v[0].x, v[0].y},(vector2f){v[1].x, v[1].y}, (vector2f){v[2].x, v[2].y});
 
+
     //#pragma omp parallel for
     for (p.y = bbminy; p.y <= bbmaxy; p.y += step_y_size){
         vector4f w0 = w0_row;
@@ -284,34 +289,32 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
         vector4f w2 = w2_row;
 
         for (p.x = bbminx; p.x <= bbmaxx; p.x += step_x_size){
+            //Groups by 4 pixels wide and 1 pixel high
+            bool mask[4] = {(w0.x >= 0 && w1.x >= 0 && w2.x >= 0), 
+                            (w0.y >= 0 && w1.y >= 0 && w2.y >= 0), 
+                            (w0.z >= 0 && w1.z >= 0 && w2.z >= 0), 
+                            (w0.w >= 0 && w1.w >= 0 && w2.w >= 0)}; 
+            bool any_mask = mask[0] || mask[1] || mask[2]  || mask[3];
+            vector3f all_bc[4] = {(vector3f){w0.x, w1.x, w2.x}, 
+                                  (vector3f){w0.y, w1.y, w2.y},  
+                                  (vector3f){w0.z, w1.z, w2.z}, 
+                                  (vector3f){w0.w, w1.w, w2.w}}; 
 
-        //Groups by 4 pixels wide and 1 pixel high
-        bool mask[4] = {(w0.x >= 0 && w1.x >= 0 && w2.x >= 0), 
-                        (w0.y >= 0 && w1.y >= 0 && w2.y >= 0), 
-                        (w0.z >= 0 && w1.z >= 0 && w2.z >= 0), 
-                        (w0.w >= 0 && w1.w >= 0 && w2.w >= 0)}; 
-        bool any_mask = mask[0] | mask[1] | mask[2]  | mask[3];
-        vector3f all_bc[4] = {(vector3f){w0.x , w1.x , w2.x}, 
-                              (vector3f){w0.y , w1.y , w2.y},  
-                              (vector3f){w0.z , w1.z , w2.z}, 
-                              (vector3f){w0.w , w1.w , w2.w}}; 
+            if(any_mask){
+                //#pragma omp parallel for
+                for(int i = 0; i < 4; i++){
+                    if(!mask[i])
+                        continue;
+                    vector3f bc = scale_vec3f((vector3f){all_bc[i].x, all_bc[i].y, all_bc[i].z}, 1/twice_total_area);
 
+                    render_pixel(shader, model, zbuffer, color_buffer, p.x+i, p.y, bc);
 
-        if(any_mask){
-            //#pragma omp parallel for
-            for(int i = 0; i < 4; i++){
-                if(!mask[i])
-                    continue;
-                vector3f bc = scale_vec3f((vector3f){all_bc[i].x, all_bc[i].y, all_bc[i].z}, 1/twice_total_area);
-
-                render_pixel(shader, model, zbuffer, color_buffer, p.x+i, p.y, bc);
-
+                }
             }
-        }
-        //step to right
-        w0 = add_vec4f(w0, e12.one_step_x);
-        w1 = add_vec4f(w1, e20.one_step_x);
-        w2 = add_vec4f(w2, e01.one_step_x); 
+            //step to right
+            w0 = add_vec4f(w0, e12.one_step_x);
+            w1 = add_vec4f(w1, e20.one_step_x);
+            w2 = add_vec4f(w2, e01.one_step_x); 
     }
     //row step
     w0_row = add_vec4f(w0_row, e12.one_step_y);
@@ -439,7 +442,7 @@ void triangle2D_texture(image_view* color_buffer, vector3f clip[3], vector3f tex
 void render_pixel(Shader* shader, Model* model, float* zbuffer, image_view* color_buffer,  float x, float y, vector3f barycoord) {
         //y grows downward
         int normal_y = color_buffer->height-y-1;  
-        float z = dot_vec3f(barycoord, (vector3f){shader->ndc[0].z, shader->ndc[1].z, shader->ndc[2].z});
+        float z = dot_vec3f(barycoord, (vector3f){shader->clip[0].z, shader->clip[1].z, shader->clip[2].z});
         //Discard pixel p because inferior to z;
         if (z <= zbuffer[(int)(x+normal_y*color_buffer->width)])
         {    
