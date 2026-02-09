@@ -11,13 +11,13 @@ struct Model read_model_lines(char *file_name) {
     Model model;
 
     int vertices_size;
-    model.vertices = malloc(100000 * sizeof(vector3f));
+    model.vertices = malloc(50000 * sizeof(vector3f));
     int triangles_size;
-    model.triangles = malloc(100000 * sizeof(int));
+    model.triangles = malloc(50000 * sizeof(int));
     int normals_size;
-    model.normals = malloc(100000 * sizeof(vector3f));
+    model.normals = malloc(50000 * sizeof(vector3f));
     int texture_size;
-    model.textures = malloc(100000 * sizeof(vector3f));
+    model.textures = malloc(50000 * sizeof(vector3f));
 
 
     char *buffer;
@@ -68,7 +68,7 @@ struct Model read_model_lines(char *file_name) {
             endptr = NULL;
             model.vertices[vert_i].z = strtod(line, &endptr);
             line = strtok_r(NULL, delim, &saveptr1);
-
+            //printf("%d, %d, %d\n", model.vertices[vert_i].x, model.vertices[vert_i].y, model.vertices[vert_i].z);
             vert_i++;
             
             
@@ -90,7 +90,7 @@ struct Model read_model_lines(char *file_name) {
                     if(v != 0) {
                         //obj starts at 1 so convert to index starting at 0
                         model.triangles[face_i] = v-1;
-                       // printf("%d, ", model.triangles[face_i]);
+                        //printf("%d, ", model.triangles[face_i]);
                         face_i++;
                     }
                     vert = strtok_r(NULL, "/", &saveptr2);

@@ -27,6 +27,7 @@ void clear(const image_view *color_buffer, const vector4f *color) {
     fill_n(ptr, &fill, size, sizeof(fill));
 }
 
+//Renders entire tga image
 void render_tga(image_view *color_buffer, image_view *img_buffer) {
     color4ub* ptr = color_buffer->pixels;
     uint32_t size = color_buffer->width * color_buffer->height;
@@ -50,7 +51,7 @@ void render_faces(Shader *shader, Model *model, float *zbuffer, image_view* colo
             vector4f local = (vector4f){vec.x, vec.y, vec.z, 1.};
             
             //Transformations in local space
-            local = rotateY(local, model->angle);
+            //local = rotateY(local, model->angle);
 
             vector4f position = multiply_mat4f_vec4f(shader->ModelView, local);
             shader->clip[f] = multiply_mat4f_vec4f(shader->Perspective, position); // in clip coordinates
@@ -76,23 +77,25 @@ void render_wireframe(Model* model, image_view* color_buffer) {
     int yoffset = 200;
 
 
-    for (int i = 0; i < (model->triangles_size); i += 3) {
-        
-        int ax = model->vertices[model->triangles[i]-1].x;
-        int ay = model->vertices[model->triangles[i]-1].y;
-        int az = model->vertices[model->triangles[i]-1].z;
-        int bx = model->vertices[model->triangles[i+1]-1].x;
-        int by = model->vertices[model->triangles[i+1]-1].y;
-        int bz = model->vertices[model->triangles[i+1]-1].z;
-        int cx = model->vertices[model->triangles[i+2]-1].x;
-        int cy = model->vertices[model->triangles[i+2]-1].y;
-        int cz = model->vertices[model->triangles[i+2]-1].z;
+    for (int i = 0; i < (model->triangles_size); i += 9) {
+        vector3f a = 
+        {1.0f + model->vertices[model->triangles[i]].x * 600/ 2,
+         1.0f - model->vertices[model->triangles[i]].y * 600 / 2,
+         model->vertices[model->triangles[i]].z};
+        vector3f b =
+        {1.0f + model->vertices[model->triangles[i+3]].x * 600/ 2,
+         1.0f - model->vertices[model->triangles[i+3]].y * 600 / 2,
+         model->vertices[model->triangles[i+3]].z};
+        vector3f c =
+        {1.0f + model->vertices[model->triangles[i+6]].x * 600/ 2,
+         1.0f - model->vertices[model->triangles[i+6]].y * 600 / 2,
+         model->vertices[model->triangles[i+6]].z};
 
-        vector4f green = {0.0f, 1.0f, 0.0f, 1.0f};
+        color4ub green = {0.0f, 255.0f, 0.0f};
         
-        line(ax, ay, bx, by, color_buffer, &green);
-        line(bx, by, cx, cy, color_buffer, &green);
-        line(cx, cy, ax, ay, color_buffer, &green);
+        line(a.x, a.y, b.x, b.y, color_buffer, green);
+        line(b.x, b.y, c.x, c.y, color_buffer, green);
+        line(c.x, c.y, a.x, a.y, color_buffer, green);
     }
 }
 
@@ -188,7 +191,7 @@ void render_gui(image_view* color_buffer, mu_Rect dst, mu_Rect src, mu_Color col
 
 }
 
-void line(int ax, int ay, int bx, int by, image_view *color_buffer, vector4f *color) {
+void line(int ax, int ay, int bx, int by, image_view *color_buffer, color4ub color) {
     bool steep = fabsf(ax-bx) < fabsf(ay-by);
     //If steep (more vertical than horizontal) transpose the image to make line more horizontal
     if (steep) {
@@ -211,10 +214,10 @@ void line(int ax, int ay, int bx, int by, image_view *color_buffer, vector4f *co
         if(steep) //de-transpose if steep
         {    
 
-            *color_buffer->at(color_buffer, y, x) = to_color4ub(color);
+            *color_buffer->at(color_buffer, y, x) = color;
         } else { 
 
-            *color_buffer->at(color_buffer, x, y) = to_color4ub(color);
+            *color_buffer->at(color_buffer, x, y) = color;
         }
         ierror += 2 * fabsf(by-ay); //measures error commited when y is more horizontal than vertical
         if (ierror > bx - ax) {
@@ -280,7 +283,7 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
     vector4f w1_row = edge_init(&e20, (vector2f){v[2].x, v[2].y}, (vector2f){v[0].x, v[0].y}, p);
     vector4f w2_row = edge_init(&e01, (vector2f){v[0].x, v[0].y}, (vector2f){v[1].x, v[1].y}, p);
     double twice_total_area = twice_triangle_area((vector2f){v[0].x, v[0].y},(vector2f){v[1].x, v[1].y}, (vector2f){v[2].x, v[2].y});
-
+    
 
     //#pragma omp parallel for
     for (p.y = fmax(bbminy, 0); p.y <=  fmin(bbmaxy, color_buffer->height-1); p.y += step_y_size){
@@ -303,11 +306,23 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
             if(any_mask){
                 //#pragma omp parallel for
                 for(int i = 0; i < 4; i++){
+                    int normal_y = color_buffer->height-p.y-1;  
+                    float x = fmin(p.x+i, color_buffer->width-1);
+                    float y = fmin(normal_y, color_buffer->height-1);
+
                     if(!mask[i])
                         continue;
                     vector3f bc = scale_vec3f((vector3f){all_bc[i].x, all_bc[i].y, all_bc[i].z}, 1/twice_total_area);
+                    
+                    float z = dot_vec3f(bc, (vector3f){shader->clip[0].z, shader->clip[1].z, shader->clip[2].z});
+                    //Discard pixel p because inferior to z;
+                    if (z <= zbuffer[(int)(x+y*color_buffer->width)])
+                    {    
+                        continue;
+                    }
 
-                    render_pixel(shader, model, zbuffer, color_buffer, fmin(p.x+i, color_buffer->width-1), fmin(p.y, color_buffer->height-1), bc);
+                    zbuffer[(int)(x+y*color_buffer->width)] = z;  
+                    render_pixel(shader, model, zbuffer, color_buffer, x, y, bc);
 
                 }
             }
@@ -441,16 +456,15 @@ void triangle2D_texture(image_view* color_buffer, vector3f clip[3], vector3f tex
 
 void render_pixel(Shader* shader, Model* model, float* zbuffer, image_view* color_buffer,  float x, float y, vector3f barycoord) {
         //y grows downward
-        int normal_y = color_buffer->height-y-1;  
-        float z = dot_vec3f(barycoord, (vector3f){shader->clip[0].z, shader->clip[1].z, shader->clip[2].z});
-        //Discard pixel p because inferior to z;
-        if (z <= zbuffer[(int)(x+normal_y*color_buffer->width)])
-        {    
-            return;
-        }
+        //int normal_y = color_buffer->height-y-1;  
+        // float z = dot_vec3f(barycoord, (vector3f){shader->clip[0].z, shader->clip[1].z, shader->clip[2].z});
+        // //Discard pixel p because inferior to z;
+        // if (z <= zbuffer[(int)((x)+y*color_buffer->width)])
+        // {    
+        //     return;
+        // }
 
-        zbuffer[(int)(x+normal_y*color_buffer->width)] = z;  
-
+        // zbuffer[(int)((x)+y*color_buffer->width)] = z;  
         //*******Find fragment colors using normal data and perspective transformation*******
         //Setup normals in tangent space
         vector4f e1 = subtract_vec4f(shader->clip[1], shader->clip[0]);
@@ -494,6 +508,6 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, image_view* colo
         
         float phong = ambient + diffuse + specular;
         
-        *color_buffer->at(color_buffer, x, normal_y) = (color4ub) {phong * diff_color.r, phong * diff_color.g, phong * diff_color.b,  model->color.w};
+        *color_buffer->at(color_buffer, x, y) = (color4ub) {phong * diff_color.r, phong * diff_color.g, phong * diff_color.b,  model->color.w};
 
 }

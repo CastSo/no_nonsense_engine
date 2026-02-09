@@ -39,8 +39,8 @@ static void write_log(const char *text) {
 int main(int argc, char **argv)
 {
 
-    int SCR_WIDTH = 800;
-    int SCR_HEIGHT = 800;
+    int SCR_WIDTH = 1000;
+    int SCR_HEIGHT = 1000;
 
     int mouse_x = 0;
     int mouse_y = 0;
@@ -56,6 +56,9 @@ int main(int argc, char **argv)
 
     SDL_Window *window = SDL_CreateWindow("No Nonsense", SCR_WIDTH, SCR_HEIGHT, 0);
     
+    //Mouse Setup
+    SDL_HideCursor();
+    SDL_CaptureMouse(true);
 
     bool run = true;
 
@@ -65,10 +68,6 @@ int main(int argc, char **argv)
     shader.camera.up = (vector3f){0, 1, 0};
     shader.light.direction = (vector3f){1, 1, 1};
     
-
-    Model obj_model  = read_model_lines("./src/models/diablo3_pose.obj");
-    obj_model.color = (vector4f){255.0f, 255.0f, 255.0f, 255.0f};
-    //obj_model.scale = 0.5f;
 
     shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction,shader.camera.position),shader.camera.up);
     shader.Perspective = perspective(norm_vec3f(subtract_vec3f(shader.camera.position,shader.camera.direction)));
@@ -173,6 +172,7 @@ int main(int argc, char **argv)
     color_buffer.width = SCR_WIDTH;
     color_buffer.height = SCR_HEIGHT;
     
+    Model obj_model  = read_model_lines("./src/models/diablo3_pose.obj");
     obj_model.header_uv = malloc(sizeof(TGAHeader));
     obj_model.header_diffuse = malloc(sizeof(TGAHeader));
     obj_model.header_specular = malloc(sizeof(TGAHeader));
@@ -180,6 +180,9 @@ int main(int argc, char **argv)
     obj_model.diffuse = load_tga("./src/models/diablo3_pose_diffuse.tga", obj_model.header_diffuse);
     obj_model.specular = load_tga("./src/models/diablo3_pose_spec.tga", obj_model.header_specular);
     
+    Model teapot = read_model_lines("./src/models/african_head.obj");
+    
+
     bool first_mouse = true;
     float yaw   = -90.0f;	
     float pitch =  0.0f;
@@ -216,6 +219,7 @@ int main(int argc, char **argv)
             case SDL_EVENT_WINDOW_RESIZED:
                 if (draw_surface)
                 {
+                    
                     SDL_DestroySurface(draw_surface);
                 }
                 draw_surface = NULL;
@@ -229,7 +233,38 @@ int main(int argc, char **argv)
                 break;
             case SDL_EVENT_MOUSE_MOTION: {
                 mu_input_mousemove(ctx, event.motion.x, event.motion.y); 
+                float x_pos = event.motion.x;
+                float y_pos = event.motion.y; 
 
+                if(first_mouse) {
+                    last_x = x_pos;
+                    last_y = y_pos;
+                    first_mouse = false;
+                }
+
+                float x_offset = x_pos - last_x;
+                float y_offset = last_y - y_pos;
+                last_x = x_pos;
+                last_y = y_pos;
+
+                float sensitivity = 0.1f;
+                x_offset *= sensitivity;
+                y_offset *= sensitivity;
+                
+                yaw += x_offset;
+                pitch += y_offset;
+
+                if (pitch > 89.0f)
+                    pitch = 89.0f;
+                if (pitch < -89.0f)
+                    pitch = -89.0f;
+
+                vector3f front;
+                front.x = cos(radian(yaw) * cosf(radian(pitch)));
+                front.y = sin(radian(pitch));
+                front.z = sin(radian(yaw) * cosf(radian(pitch)));
+                shader.camera.direction = normalize_vec3f(front);
+                shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
 
                 break;
             }
@@ -322,8 +357,9 @@ int main(int argc, char **argv)
         
 
         //***************************WORLD SCENE RENDERER***************************
-        obj_model.angle += radian(90.0f);
+        //obj_model.angle += radian(90.0f);
         render_faces(&shader, &obj_model, zbuffer, &color_buffer, false, 0);
+        //render_wireframe(&obj_model, &color_buffer);
         for (int z = 0; z < zbuf_size; z++)
         {
             zbuffer[z] = -DBL_MAX;
@@ -412,6 +448,10 @@ int main(int argc, char **argv)
     free(obj_model.vertices);
     free(obj_model.normals);
     
+    free(teapot.triangles);
+    free(teapot.textures);
+    free(teapot.vertices);
+    free(teapot.normals);
 
 
     SDL_DestroySurface(draw_surface);

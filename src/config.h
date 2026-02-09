@@ -13,6 +13,7 @@
 #include <SDL3/SDL_surface.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_timer.h>
+#include  <SDL3/SDL_mouse.h>
 
 
 #include "./util/util.h"
