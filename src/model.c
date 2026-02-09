@@ -162,13 +162,13 @@ struct Model read_model_lines(char *file_name) {
     return model;
 }
 
-vector4f normal(TGAHeader *tga_header, color4ub *image, vector2f uv) {
+vector4f normal(TGAHeader tga_header, color4ub *image, vector2f uv) {
     //normal to screen space
-    int x = (int)(uv.x * tga_header->width);
-    int y = (int)((1-uv.y) * tga_header->height);
+    int x = (int)(uv.x * tga_header.width);
+    int y = (int)((1-uv.y) * tga_header.height);
 
     //Fragment samples from image
-    int i = (x + y * tga_header->width);
+    int i = (x + y * tga_header.width);
     vector4f color;
     //printf("%f, %f, %d \n", uv.x, uv.y, self.tga_header->width);
 
@@ -181,13 +181,13 @@ vector4f normal(TGAHeader *tga_header, color4ub *image, vector2f uv) {
 }
 
 //Returns just the pixel RGB
-color4ub sample2D(TGAHeader *tga_header, color4ub *image, vector2f uv) {
+color4ub sample2D(TGAHeader tga_header, color4ub *image, vector2f uv) {
     //normal to screen space
-    int x = (int)(uv.x * tga_header->width);
-    int y = (int)((1-uv.y) * tga_header->height);
+    int x = (int)(uv.x * tga_header.width);
+    int y = (int)((1-uv.y) * tga_header.height);
 
     //Fragment samples from image
-    int i = (x + y * tga_header->width);
+    int i = (x + y * tga_header.width);
     vector4f color;
 
     return (color4ub){image[i].r, image[i].g, image[i].b,  0};

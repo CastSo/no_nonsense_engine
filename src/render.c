@@ -11,9 +11,16 @@ vector4f edge_init(Edge* self, vector2f v0, vector2f v1, vector2f origin) {
     self->one_step_x = scale_vec4f((vector4f){A, A, A, A}, self->step_x_size);
     self->one_step_y = scale_vec4f((vector4f){B, B, B, B}, self->step_y_size);
 
-    //x/y values for initial pixel block
-    vector4f x = add_vec4f((vector4f){origin.x, origin.x, origin.x, origin.x}, (vector4f){0, 1, 2, 3});
-    vector4f y = (vector4f){origin.y, origin.y, origin.y, origin.y};
+ /*
+
+    (0,0) | (1,0)
+    ____________
+    (0,1) | (1,1)
+
+    */
+    //x/y values for initial pixel block (2x2)
+    vector4f x = add_vec4f((vector4f){origin.x, origin.x, origin.x, origin.x}, (vector4f){0, 1, 1, 0});
+    vector4f y = add_vec4f((vector4f){origin.y, origin.y, origin.y, origin.y}, (vector4f){0, 1, 0, 1});
 
     //Edge function values at origin
     return add_vec4f(add_vec4f(multiply_vec4f((vector4f){A, A, A, A}, x), multiply_vec4f((vector4f){B, B, B, B}, y)), (vector4f){C, C, C, C});
@@ -269,8 +276,8 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
     //Barycentric coordinates at min x and min y corner
     vector2f p = {bbminx, bbminy};
     Edge e01, e12, e20;
-    int step_x_size = 4;
-    int step_y_size = 1;
+    int step_x_size = 2;
+    int step_y_size = 2;
     e01.step_x_size = step_x_size;
     e01.step_y_size = step_y_size;
     e12.step_x_size = step_x_size;
@@ -304,9 +311,10 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
                                   (vector3f){w0.w, w1.w, w2.w}}; 
 
             if(any_mask){
-                //#pragma omp parallel for
-                for(int i = 0; i < 4; i++){
-                    int normal_y = color_buffer->height-p.y-1;  
+                #pragma omp parallel for
+                //Cycles through 2x2
+                for(int i = 0; i <= 1; i++){
+                    int normal_y = color_buffer->height-(p.y+i)-1;  
                     float x = fmin(p.x+i, color_buffer->width-1);
                     float y = fmin(normal_y, color_buffer->height-1);
 
@@ -325,6 +333,28 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
                     render_pixel(shader, model, zbuffer, color_buffer, x, y, bc);
 
                 }
+                #pragma omp parallel for
+                for(int i = 0; i <= 1; i++){
+                    int normal_y = color_buffer->height-(p.y+i)-1;  
+                    float x = fmin(p.x+1-i, color_buffer->width-1);
+                    float y = fmin(normal_y, color_buffer->height-1);
+
+                    if(!mask[i+2])
+                        continue;
+                    vector3f bc = scale_vec3f((vector3f){all_bc[i+2].x, all_bc[i+2].y, all_bc[i+2].z}, 1/twice_total_area);
+                    
+                    float z = dot_vec3f(bc, (vector3f){shader->clip[0].z, shader->clip[1].z, shader->clip[2].z});
+                    //Discard pixel p because inferior to z;
+                    if (z <= zbuffer[(int)(x+y*color_buffer->width)])
+                    {    
+                        continue;
+                    }
+
+                    zbuffer[(int)(x+y*color_buffer->width)] = z;  
+                    render_pixel(shader, model, zbuffer, color_buffer, x, y, bc);
+
+                }
+                
             }
             //step to right
             w0 = add_vec4f(w0, e12.one_step_x);

@@ -39,14 +39,15 @@ static void write_log(const char *text) {
 int main(int argc, char **argv)
 {
 
-    int SCR_WIDTH = 1000;
-    int SCR_HEIGHT = 1000;
+    int SCR_WIDTH = 800;
+    int SCR_HEIGHT = 800;
 
     int mouse_x = 0;
     int mouse_y = 0;
 
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Surface *draw_surface = NULL;
+    draw_surface = SDL_ScaleSurface(draw_surface, 360, 800, SDL_SCALEMODE_PIXELART);
 
     bool success = SDL_Init(SDL_INIT_VIDEO);
     if (!success)
@@ -57,8 +58,10 @@ int main(int argc, char **argv)
     SDL_Window *window = SDL_CreateWindow("No Nonsense", SCR_WIDTH, SCR_HEIGHT, 0);
     
     //Mouse Setup
-    SDL_HideCursor();
+    //SDL_HideCursor();
     SDL_CaptureMouse(true);
+    //cursor stays in window
+    SDL_SetWindowMouseGrab(window, true);
 
     bool run = true;
 
@@ -173,12 +176,9 @@ int main(int argc, char **argv)
     color_buffer.height = SCR_HEIGHT;
     
     Model obj_model  = read_model_lines("./src/models/diablo3_pose.obj");
-    obj_model.header_uv = malloc(sizeof(TGAHeader));
-    obj_model.header_diffuse = malloc(sizeof(TGAHeader));
-    obj_model.header_specular = malloc(sizeof(TGAHeader));
-    obj_model.uv = load_tga("./src/models/diablo3_pose_nm_tangent.tga", obj_model.header_uv);
-    obj_model.diffuse = load_tga("./src/models/diablo3_pose_diffuse.tga", obj_model.header_diffuse);
-    obj_model.specular = load_tga("./src/models/diablo3_pose_spec.tga", obj_model.header_specular);
+    obj_model.uv = load_tga("./src/models/diablo3_pose_nm_tangent.tga", &obj_model.header_uv);
+    obj_model.diffuse = load_tga("./src/models/diablo3_pose_diffuse.tga", &obj_model.header_diffuse);
+    obj_model.specular = load_tga("./src/models/diablo3_pose_spec.tga", &obj_model.header_specular);
     
     Model teapot = read_model_lines("./src/models/african_head.obj");
     
@@ -441,9 +441,6 @@ int main(int argc, char **argv)
     free(obj_model.uv);
     free(obj_model.diffuse);
     free(obj_model.specular);
-    free(obj_model.header_diffuse);
-    free(obj_model.header_uv);
-    free(obj_model.header_specular);
     free(obj_model.textures);
     free(obj_model.vertices);
     free(obj_model.normals);

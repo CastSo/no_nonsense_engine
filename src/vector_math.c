@@ -197,13 +197,15 @@ float norm_vec3f(vector3f v) {
 }
 
 vector3f normalize_vec3f(vector3f v) {
-    return (vector3f){v.x/norm_vec3f(v), v.y/norm_vec3f(v), v.z/norm_vec3f(v)};
+    float norm = norm_vec3f(v);
+    return (vector3f){v.x/norm, v.y/norm, v.z/norm};
 }
 
 float norm_vec4f(vector4f v) {
     return sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
 }
 vector4f normalize_vec4f(vector4f v) {
-    return (vector4f){v.x/norm_vec4f(v), v.y/norm_vec4f(v), v.z/norm_vec4f(v), v.w/norm_vec4f(v)};
+    float norm = norm_vec4f(v);
+    return (vector4f){v.x/norm, v.y/norm, v.z/norm, v.w/norm};
 }
 

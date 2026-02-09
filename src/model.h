@@ -6,9 +6,9 @@
 #include "util/util.h"
 
 typedef struct Model {
-    TGAHeader *header_uv;
-    TGAHeader *header_diffuse;
-    TGAHeader *header_specular;
+    TGAHeader header_uv;
+    TGAHeader header_diffuse;
+    TGAHeader header_specular;
 
     int* triangles;
     //Texture images
@@ -43,5 +43,5 @@ typedef struct Sprite {
 
 
 struct Model read_model_lines(char *file_name);
-vector4f normal(TGAHeader *tga_header, color4ub *image, vector2f uv);
-color4ub sample2D(TGAHeader *tga_header, color4ub *image, vector2f uv);
+vector4f normal(TGAHeader tga_header, color4ub *image, vector2f uv);
+color4ub sample2D(TGAHeader tga_header, color4ub *image, vector2f uv);
