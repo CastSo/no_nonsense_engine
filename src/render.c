@@ -47,9 +47,10 @@ void render_tga(image_view *color_buffer, image_view *img_buffer) {
 
 
 
-void render_faces(Shader *shader, Model *model, float *zbuffer, image_view* color_buffer, bool is_bf_cull, float move) {
+void render_faces(Shader *shader, Model *model, float *zbuffer, float *depth_buffer, image_view* color_buffer, bool is_bf_cull, float move) {
 
     //Reference vertices by induces
+    //#pragma omp parallel for
     for (int v = 0; v < (model->triangles_size); v += 9) {
 
 
@@ -58,7 +59,7 @@ void render_faces(Shader *shader, Model *model, float *zbuffer, image_view* colo
             vector4f local = (vector4f){vec.x, vec.y, vec.z, 1.};
             
             //Transformations in local space
-            //local = rotateY(local, model->angle);
+            local = rotateY(local, model->angle);
 
             vector4f position = multiply_mat4f_vec4f(shader->ModelView, local);
             shader->clip[f] = multiply_mat4f_vec4f(shader->Perspective, position); // in clip coordinates
@@ -73,7 +74,7 @@ void render_faces(Shader *shader, Model *model, float *zbuffer, image_view* colo
 
         
 
-        triangle3D(shader, model, zbuffer, color_buffer, is_bf_cull);
+        triangle3D(shader, model, zbuffer, depth_buffer, color_buffer, is_bf_cull);
     }
     
 }
@@ -239,7 +240,7 @@ void line(int ax, int ay, int bx, int by, image_view *color_buffer, color4ub col
 
 
 //Uses bounding box rasterization
-void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *color_buffer, bool is_backface_cull) {
+void triangle3D(Shader *shader,  Model *model, float *zbuffer, float* depth_buffer,  image_view *color_buffer, bool is_backface_cull) {
 
     vector3f sun_direction = shader->light.direction;
     vector3f cam_pos = shader->camera.position;
@@ -278,8 +279,6 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
     Edge e01, e12, e20;
     int step_x_size = 2;
     int step_y_size = 2;
-    int step_x_size = 2;
-    int step_y_size = 2;
     e01.step_x_size = step_x_size;
     e01.step_y_size = step_y_size;
     e12.step_x_size = step_x_size;
@@ -313,7 +312,6 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
                                   (vector3f){w0.w, w1.w, w2.w}}; 
 
             if(any_mask){
-                #pragma omp parallel for
                 //Cycles through 2x2
                 for(int i = 0; i <= 1; i++){
                     int normal_y = color_buffer->height-(p.y+i)-1;  
@@ -332,10 +330,10 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
                     }
 
                     zbuffer[(int)(x+y*color_buffer->width)] = z;  
-                    render_pixel(shader, model, zbuffer, color_buffer, x, y, bc);
+                    render_pixel(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);
 
                 }
-                #pragma omp parallel for
+
                 for(int i = 0; i <= 1; i++){
                     int normal_y = color_buffer->height-(p.y+i)-1;  
                     float x = fmin(p.x+1-i, color_buffer->width-1);
@@ -353,7 +351,7 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
                     }
 
                     zbuffer[(int)(x+y*color_buffer->width)] = z;  
-                    render_pixel(shader, model, zbuffer, color_buffer, x, y, bc);
+                    render_pixel(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);
 
                 }
                 
@@ -486,17 +484,7 @@ void triangle2D_texture(image_view* color_buffer, vector3f clip[3], vector3f tex
 
 
 
-void render_pixel(Shader* shader, Model* model, float* zbuffer, image_view* color_buffer,  float x, float y, vector3f barycoord) {
-        //y grows downward
-        //int normal_y = color_buffer->height-y-1;  
-        // float z = dot_vec3f(barycoord, (vector3f){shader->clip[0].z, shader->clip[1].z, shader->clip[2].z});
-        // //Discard pixel p because inferior to z;
-        // if (z <= zbuffer[(int)((x)+y*color_buffer->width)])
-        // {    
-        //     return;
-        // }
-
-        // zbuffer[(int)((x)+y*color_buffer->width)] = z;  
+void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buffer, image_view* color_buffer,  float x, float y, vector3f barycoord) { 
         //*******Find fragment colors using normal data and perspective transformation*******
         //Setup normals in tangent space
         vector4f e1 = subtract_vec4f(shader->clip[1], shader->clip[0]);
@@ -538,8 +526,33 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, image_view* colo
         float specular = (.5+2.*spec_color.r/255.) * pow(fmax(0, dot_vec4f(vec_r, vec_v)), e);
 
         
-        float phong = ambient + diffuse + specular;
         
-        *color_buffer->at(color_buffer, x, y) = (color4ub) {phong * diff_color.r, phong * diff_color.g, phong * diff_color.b,  model->color.w};
+        
+        
+        matrix4f light_transform = shader->Perspective;
+        matrix4f camera_transform = shader->ModelView;
+        
+        //Fragment for depth map testing
+        vector4f fragment;
+        float phong;
+        fragment = scale_vec4f((vector4f){diff_color.r, diff_color.g, diff_color.b, diff_color.a}, phong);
+        vector4f current_depth = multiply_mat4f_vec4f(multiply_mat4f(light_transform, camera_transform), fragment);
+        //depth = scale_vec4f(depth, 1/depth.w);
+        int i = (int)(x+y*color_buffer->width);
+        
+        
+        //Fragment lies in shadow
+        float bias = 0.5f; //Avoid shadow acne
+        if(current_depth.z-bias > depth_buffer[i]){    
+            phong = ambient + 0 * (diffuse + specular);
+            depth_buffer[i] = current_depth.z;
+        }else {
+            phong = ambient + 1 * (diffuse + specular);
+        }
+        fragment = scale_vec4f((vector4f){diff_color.r, diff_color.g, diff_color.b, diff_color.a}, phong);
+        //printf("%f, %f \n", current_depth.z, depth_buffer[i]);
+        
+        
+        *color_buffer->at(color_buffer, x, y) = (color4ub) {fragment.x, fragment.y, fragment.z,  fragment.w};
 
 }

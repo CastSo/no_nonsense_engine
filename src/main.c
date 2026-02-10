@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Surface *draw_surface = NULL;
-    draw_surface = SDL_ScaleSurface(draw_surface, 360, 800, SDL_SCALEMODE_PIXELART);
+    draw_surface = SDL_ScaleSurface(draw_surface, 640, 480, SDL_SCALEMODE_PIXELART);
 
     bool success = SDL_Init(SDL_INIT_VIDEO);
     if (!success)
@@ -66,10 +66,10 @@ int main(int argc, char **argv)
     bool run = true;
 
     Shader shader;
-    shader.camera.position = (vector3f){0, 0, 2};
+    shader.camera.position = (vector3f){0, 0, 4};
     shader.camera.direction = (vector3f){0, 0, -1};
     shader.camera.up = (vector3f){0, 1, 0};
-    shader.light.direction = (vector3f){1, 1, 1};
+    shader.light.direction = (vector3f){2, 0, 0};
     
 
     shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction,shader.camera.position),shader.camera.up);
@@ -151,11 +151,13 @@ int main(int argc, char **argv)
     cube.norm_size = cube.triangles_size;
 
 
-    int zbuf_size = SCR_WIDTH * SCR_HEIGHT;
-    float zbuffer[zbuf_size];
-    for (int z = 0; z < zbuf_size; z++)
+    int buf_size = SCR_WIDTH * SCR_HEIGHT;
+    float depth_buffer[buf_size];
+    float zbuffer[buf_size];
+    for (int z = 0; z < buf_size; z++)
     {
         zbuffer[z] = -DBL_MAX;
+        depth_buffer[z] = -DBL_MAX;
     }
 
     //Time step setup
@@ -175,12 +177,10 @@ int main(int argc, char **argv)
     color_buffer.width = SCR_WIDTH;
     color_buffer.height = SCR_HEIGHT;
     
-    Model obj_model  = read_model_lines("./src/models/diablo3_pose.obj");
-    obj_model.uv = load_tga("./src/models/diablo3_pose_nm_tangent.tga", &obj_model.header_uv);
-    obj_model.diffuse = load_tga("./src/models/diablo3_pose_diffuse.tga", &obj_model.header_diffuse);
-    obj_model.specular = load_tga("./src/models/diablo3_pose_spec.tga", &obj_model.header_specular);
-    
-    Model teapot = read_model_lines("./src/models/african_head.obj");
+    Model obj_model  = read_model_lines("./src/models/diablo/diablo3_pose.obj");
+    obj_model.uv = load_tga("./src/models/diablo/diablo3_pose_nm_tangent.tga", &obj_model.header_uv);
+    obj_model.diffuse = load_tga("./src/models/diablo/diablo3_pose_diffuse.tga", &obj_model.header_diffuse);
+    obj_model.specular = load_tga("./src/models/diablo/diablo3_pose_spec.tga", &obj_model.header_specular);
     
 
     bool first_mouse = true;
@@ -351,16 +351,17 @@ int main(int argc, char **argv)
 
 
         // Set background color
-        vector4f backgroundColor = {0.68f, 0.75f, 0.83f, 1.0f};
+        //vector4f backgroundColor = {0.68f, 0.75f, 0.83f, 1.0f};
+        vector4f backgroundColor = {0.0f, 0.0f, 0.0f, 1.0f};
         clear(&color_buffer, &backgroundColor);
         color_buffer.at = image_view_at;
         
 
         //***************************WORLD SCENE RENDERER***************************
-        //obj_model.angle += radian(90.0f);
-        render_faces(&shader, &obj_model, zbuffer, &color_buffer, false, 0);
+        obj_model.angle += radian(90.0f);
+        render_faces(&shader, &obj_model, zbuffer, depth_buffer, &color_buffer, false, 0);
         //render_wireframe(&obj_model, &color_buffer);
-        for (int z = 0; z < zbuf_size; z++)
+        for (int z = 0; z < buf_size; z++)
         {
             zbuffer[z] = -DBL_MAX;
         }
@@ -444,11 +445,6 @@ int main(int argc, char **argv)
     free(obj_model.textures);
     free(obj_model.vertices);
     free(obj_model.normals);
-    
-    free(teapot.triangles);
-    free(teapot.textures);
-    free(teapot.vertices);
-    free(teapot.normals);
 
 
     SDL_DestroySurface(draw_surface);

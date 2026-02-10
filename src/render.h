@@ -26,10 +26,10 @@ float twice_triangle_area(vector2f a, vector2f b, const vector2f c);
 void triangle2D(image_view* color_buffer, vector3f clip[3], color4ub color, bool is_backface_cull);
 float signed_triangle_area(int ax, int ay, int bx, int by, int cx, int cy);
 void triangle2D_texture(image_view* color_buffer, vector3f clip[3], vector3f tex[3], color4ub color, bool is_backface_cull);
-void triangle3D(Shader *shader,  Model *model, float *zbuffer, image_view *color_buffer,  bool is_backface_cull);
-void render_pixel(Shader* shader, Model* model, float *zbuffer, image_view* color_buffer, float x, float y, vector3f barycoord);
+void triangle3D(Shader *shader,  Model *model, float *zbuffer,  float* depth_buffer, image_view *color_buffer,  bool is_backface_cull);
+void render_pixel(Shader* shader, Model* model, float *zbuffer, float* depth_buffer, image_view* color_buffer, float x, float y, vector3f barycoord);
 
-void render_faces(Shader *shader, Model *model, float *zbuffer, image_view* color_buffer,  bool is_bf_cull, float move);
+void render_faces(Shader *shader, Model *model, float *zbuffer, float* depth_buffer, image_view* color_buffer,  bool is_bf_cull, float move);
 void render_wireframe(Model* model, image_view* color_buffer);
 
 void render_gui_texture(image_view* color_buffer, mu_Rect dst, mu_Rect src, mu_Color color);
