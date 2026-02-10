@@ -278,6 +278,8 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  image_view *colo
     Edge e01, e12, e20;
     int step_x_size = 2;
     int step_y_size = 2;
+    int step_x_size = 2;
+    int step_y_size = 2;
     e01.step_x_size = step_x_size;
     e01.step_y_size = step_y_size;
     e12.step_x_size = step_x_size;
