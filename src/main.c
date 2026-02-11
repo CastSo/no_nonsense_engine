@@ -61,7 +61,7 @@ int main(int argc, char **argv)
     shader.camera.position = (vector3f){0, 0, 4};
     shader.camera.direction = (vector3f){0, 0, -1};
     shader.camera.up = (vector3f){0, 1, 0};
-    shader.light.direction = (vector3f){1, 0, 0};
+    shader.light.direction = (vector3f){0, 0, 1};
     
 
     shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction,shader.camera.position),shader.camera.up);
@@ -94,11 +94,11 @@ int main(int argc, char **argv)
     color_buffer.width = SCR_WIDTH;
     color_buffer.height = SCR_HEIGHT;
 
-    Model cube = read_model_lines("./src/models/brickwall/cube.obj");
+    Model cube = load_obj("./src/models/brickwall/cube.obj");
     cube.uv = load_tga("./src/models/brickwall/brickwall_normal.tga", &cube.header_uv);
     cube.diffuse = load_tga("./src/models/brickwall/brickwall_diffuse.tga", &cube.header_diffuse);
     
-    Model obj_model  = read_model_lines("./src/models/diablo/diablo3_pose.obj");
+    Model obj_model  = load_obj("./src/models/diablo/diablo3_pose.obj");
     obj_model.uv = load_tga("./src/models/diablo/diablo3_pose_nm_tangent.tga", &obj_model.header_uv);
     obj_model.diffuse = load_tga("./src/models/diablo/diablo3_pose_diffuse.tga", &obj_model.header_diffuse);
     obj_model.specular = load_tga("./src/models/diablo/diablo3_pose_spec.tga", &obj_model.header_specular);
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
                 front.x = cos(radian(yaw) * cosf(radian(pitch)));
                 front.y = sin(radian(pitch));
                 front.z = sin(radian(yaw) * cosf(radian(pitch)));
-                shader.camera.direction = normalize_vec3f(front);
+                shader.camera.direction = (front);
                 shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
 
                 break;
@@ -273,17 +273,20 @@ int main(int argc, char **argv)
         
 
         //***************************WORLD SCENE RENDERER***************************
-        //obj_model.angle += radian(90.0f);
+        obj_model.angle += radian(90.0f);
+        render_faces(&shader, &obj_model, zbuffer, depth_buffer, &color_buffer, false);
 
-        for (int i = 0; i < 4; i++)
+        // for (int i = 0; i < 4; i++)
+        // {
+        //     cube.position = (vector3f){i+1.0f, 0.0f, 0.0f};
+        //     render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, false);
+
+        // } 
+        for (int z = 0; z < buf_size; z++)
         {
-            cube.position = (vector3f){i+1.0f, 0.0f, 0.0f};
-            render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, false);
-            for (int z = 0; z < buf_size; z++)
-            {
-                zbuffer[z] = -DBL_MAX;
-            }  
-        } 
+            depth_buffer[z] = -DBL_MAX;
+            zbuffer[z] = -DBL_MAX;
+        }  
 
 
 

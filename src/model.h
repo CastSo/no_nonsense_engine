@@ -43,6 +43,6 @@ typedef struct Sprite {
 }sprite;
 
 
-struct Model read_model_lines(char *file_name);
+struct Model load_obj(char *file_name);
 vector4f normal(TGAHeader tga_header, color4ub *image, vector2f uv);
 color4ub sample2D(TGAHeader tga_header, color4ub *image, vector2f uv);

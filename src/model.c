@@ -1,7 +1,7 @@
 #include "model.h"
 
 
-struct Model read_model_lines(char *file_name) {
+struct Model load_obj(char *file_name) {
     FILE *fptr = fopen(file_name, "r");
     if (fptr == NULL) {
         perror("Unable to open file");

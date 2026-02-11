@@ -511,9 +511,9 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buf
 
         vector4f nm = normal(model->header_uv, model->uv, (vector2f){uv.x, uv.y});
         
-        vector4f vec_n_nm = normalize_vec4f(multiply_mat4f_vec4f(transpose_mat4f(D), nm));
+        vector4f vec_n_nm = multiply_mat4f_vec4f(transpose_mat4f(D), nm);
 
-        vector4f vec_l = normalize_vec4f( (vector4f){shader->light.direction.x, shader->light.direction.y, shader->light.direction.z, 0.0f}); // direction toward sun
+        vector4f vec_l = (vector4f){shader->light.direction.x, shader->light.direction.y, shader->light.direction.z, 0.0f}; // direction toward sun
         
         int e = 35;
         vector4f vec_v = normalize_vec4f((vector4f){shader->camera.position.x, shader->camera.position.y, shader->camera.position.z, 0.0f}); //fragment to sun
@@ -532,12 +532,12 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buf
 
 
         matrix4f light_transform = shader->Perspective;
-        matrix4f camera_transform = shader->ModelView;
+        matrix4f camera_transform = inverse_mat4f(shader->ModelView);
         
         //Fragment for depth map testing
         vector4f fragment;
         float phong;
-        phong = ambient + (diffuse + specular);
+        phong = ambient + 1 * (diffuse + specular);
         fragment = scale_vec4f((vector4f){diff_color.r, diff_color.g, diff_color.b, diff_color.a}, phong);
         vector4f current_depth = multiply_mat4f_vec4f(multiply_mat4f(light_transform, camera_transform), fragment);
         //depth = scale_vec4f(depth, 1/depth.w);
@@ -545,8 +545,8 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buf
         
         
         //Fragment lies in shadow
-        float bias = 0.5f; //Avoid shadow acne
-        if(current_depth.z-bias > depth_buffer[i]){    
+        float bias = 0.05f; //Avoid shadow acne
+        if(current_depth.z-bias <= depth_buffer[i]){    
             phong = ambient + 0 * (diffuse + specular);
             depth_buffer[i] = current_depth.z;
         }else {
