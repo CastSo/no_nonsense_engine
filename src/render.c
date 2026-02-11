@@ -521,20 +521,22 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buf
         //Phong colors
         float diffuse = fmax(0, dot_vec4f(vec_n_nm, vec_l));
         float ambient = .3;
-        color4ub spec_color = sample2D(model->header_specular, model->specular, (vector2f){uv.x, uv.y});
+        color4ub spec_color;
+        if(model->specular != NULL)
+            spec_color = sample2D(model->header_specular, model->specular, (vector2f){uv.x, uv.y});
+        else
+            spec_color = (color4ub) {1.0f, 1.0f, 1.0f, 1.0f};
         color4ub diff_color = sample2D(model->header_diffuse, model->diffuse, (vector2f){uv.x, uv.y});
         float specular = (.5+2.*spec_color.r/255.) * pow(fmax(0, dot_vec4f(vec_r, vec_v)), e);
 
-        
-        
-        
-        
+
         matrix4f light_transform = shader->Perspective;
         matrix4f camera_transform = shader->ModelView;
         
         //Fragment for depth map testing
         vector4f fragment;
         float phong;
+        phong = ambient + (diffuse + specular);
         fragment = scale_vec4f((vector4f){diff_color.r, diff_color.g, diff_color.b, diff_color.a}, phong);
         vector4f current_depth = multiply_mat4f_vec4f(multiply_mat4f(light_transform, camera_transform), fragment);
         //depth = scale_vec4f(depth, 1/depth.w);

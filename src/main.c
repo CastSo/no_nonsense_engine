@@ -4,8 +4,7 @@
 #include "tga_image.h"
 
 
-static  char logbuf[64000];
-static   int logbuf_updated = 0;
+
 
 static const char button_map[256] = {
   [ SDL_BUTTON_LEFT   & 0xff ] =  MU_MOUSE_LEFT,
@@ -26,14 +25,6 @@ int text_width(mu_Font font, const char *text, int len) {
 int text_height(mu_Font font) {
     return 18;
 }
-
-static void write_log(const char *text) {
-  if (logbuf[0]) { strcat(logbuf, "\n"); }
-  strcat(logbuf, text);
-  logbuf_updated = 1;
-}
-
-
 
 
 int main(int argc, char **argv)
@@ -61,7 +52,8 @@ int main(int argc, char **argv)
     //SDL_HideCursor();
     SDL_CaptureMouse(true);
     //cursor stays in window
-    SDL_SetWindowMouseGrab(window, true);
+    SDL_SetWindowRelativeMouseMode(window, true);
+    //SDL_SetWindowMouseGrab(window, true);
 
     bool run = true;
 
@@ -69,86 +61,12 @@ int main(int argc, char **argv)
     shader.camera.position = (vector3f){0, 0, 4};
     shader.camera.direction = (vector3f){0, 0, -1};
     shader.camera.up = (vector3f){0, 1, 0};
-    shader.light.direction = (vector3f){2, 0, 0};
+    shader.light.direction = (vector3f){1, 0, 0};
     
 
     shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction,shader.camera.position),shader.camera.up);
     shader.Perspective = perspective(norm_vec3f(subtract_vec3f(shader.camera.position,shader.camera.direction)));
     shader.Viewport = viewport(SCR_WIDTH / 16.f, SCR_HEIGHT / 16.f, SCR_WIDTH * 7.f / 8.f, SCR_HEIGHT * 7.f / 8.f);
-
-    Model cube;
-    cube.color = (vector4f){75.0f, 255.0f, 75.0f, 255.0f};
-    //cube.scale = 0.2f;
-    int vert_count = 24;
-
-    //Uses counter-clockwise winding like OpenGL
-    float vertices[72] = {
-        -0.5f, -0.5f, -0.5f,         // A 0
-        0.5f, -0.5f, -0.5f,         // B 1
-        0.5f,  0.5f, -0.5f,         // C 2
-        -0.5f,  0.5f, -0.5f,         // D 3
-        -0.5f, -0.5f,  0.5f,         // E 4
-        0.5f, -0.5f,  0.5f,          // F 5
-        0.5f,  0.5f,  0.5f,          // G 6
-        -0.5f,  0.5f,  0.5f,          // H 7
-        
-        -0.5f,  0.5f, -0.5f,      // D 8
-        -0.5f, -0.5f, -0.5f,         // A 9
-        -0.5f, -0.5f,  0.5f,         // E 10
-        -0.5f,  0.5f,  0.5f,         // H 11
-        0.5f, -0.5f, -0.5f,          // B 12
-        0.5f,  0.5f, -0.5f,          // C 13
-        0.5f,  0.5f,  0.5f,          // G 14
-        0.5f, -0.5f,  0.5f,          // F 15
-        
-        -0.5f, -0.5f, -0.5f,      // A 16
-        0.5f, -0.5f, -0.5f,          // B 17
-        0.5f, -0.5f,  0.5f,          // F 18
-        -0.5f, -0.5f,  0.5f,         // E 19
-        0.5f,  0.5f, -0.5f,          // C 20
-        -0.5f,  0.5f, -0.5f,         // D 21
-        -0.5f,  0.5f,  0.5f,         // H 22
-        0.5f,  0.5f,  0.5f,          // G 23
-    };
-
-    cube.triangles_size = 36;
-    int cube_indices[36] = {
-        // front and back
-        0, 3, 2,
-        2, 1, 0,
-        4, 5, 6,
-        6, 7 ,4,
-        // left and right
-        11, 8, 9,
-        9, 10, 11,
-        12, 13, 14,
-        14, 15, 12,
-        // bottom and top
-        16, 17, 18,
-        18, 19, 16,
-        20, 21, 22,
-        22, 23, 20
-    };
-    cube.vertices = malloc(vert_count * sizeof(vector3f));
-    int v_i = 0;
-    for (int i = 0; i < 24; i++)
-    {
-
-        cube.vertices[i].x = vertices[v_i];
-        v_i++;
-        cube.vertices[i].y = vertices[v_i];
-        v_i++;
-        cube.vertices[i].z = vertices[v_i];
-        v_i++;
-    }
-
-    cube.vertices_size = vert_count;
-
-    // vert indices
-    cube.triangles = cube_indices;
-
-    cube.normals = find_normals(cube.vertices, cube.vertices_size, cube.triangles, cube.triangles_size);
-    cube.norm_size = cube.triangles_size;
 
 
     int buf_size = SCR_WIDTH * SCR_HEIGHT;
@@ -163,11 +81,10 @@ int main(int argc, char **argv)
     //Time step setup
     uint32_t current_time = 0;
     uint32_t last_time;
-    int FPS = 30;
-    int32_t tick_interval = 1000/FPS;
+    int FPS = 60;
+    int64_t tick_interval = 1000 /FPS;
     float delta_time = 0;
 
-    cube.angle = 60;
     float move = 0.05f;
 
     float cam_speed = 0.0;
@@ -176,11 +93,16 @@ int main(int argc, char **argv)
     image_view color_buffer;
     color_buffer.width = SCR_WIDTH;
     color_buffer.height = SCR_HEIGHT;
+
+    Model cube = read_model_lines("./src/models/brickwall/cube.obj");
+    cube.uv = load_tga("./src/models/brickwall/brickwall_normal.tga", &cube.header_uv);
+    cube.diffuse = load_tga("./src/models/brickwall/brickwall_diffuse.tga", &cube.header_diffuse);
+
     
-    Model obj_model  = read_model_lines("./src/models/diablo/diablo3_pose.obj");
-    obj_model.uv = load_tga("./src/models/diablo/diablo3_pose_nm_tangent.tga", &obj_model.header_uv);
-    obj_model.diffuse = load_tga("./src/models/diablo/diablo3_pose_diffuse.tga", &obj_model.header_diffuse);
-    obj_model.specular = load_tga("./src/models/diablo/diablo3_pose_spec.tga", &obj_model.header_specular);
+    // Model obj_model  = read_model_lines("./src/models/diablo/diablo3_pose.obj");
+    // obj_model.uv = load_tga("./src/models/diablo/diablo3_pose_nm_tangent.tga", &obj_model.header_uv);
+    // obj_model.diffuse = load_tga("./src/models/diablo/diablo3_pose_diffuse.tga", &obj_model.header_diffuse);
+    // obj_model.specular = load_tga("./src/models/diablo/diablo3_pose_spec.tga", &obj_model.header_specular);
     
 
     bool first_mouse = true;
@@ -193,21 +115,12 @@ int main(int argc, char **argv)
     mu_init(ctx);
     ctx->text_width = text_width;
     ctx->text_height = text_height;
-
+    bool mouse_down = false;
 
     while (run)
     {
         
         SDL_Event event;
-        last_time = current_time;
-        current_time = SDL_GetTicks();
-
-        
-        delta_time = current_time - last_time;
-        int32_t time_to_sleep = tick_interval - delta_time;
-        if(time_to_sleep > 0) {
-            SDL_Delay(time_to_sleep);
-        }
 
         cam_speed = 0.8f;
 
@@ -232,6 +145,10 @@ int main(int argc, char **argv)
                 run = false;
                 break;
             case SDL_EVENT_MOUSE_MOTION: {
+                float x, y;
+                Uint32 buttons = SDL_GetMouseState(&x, &y);
+                if (!buttons || !SDL_BUTTON_LMASK)
+                    continue;
                 mu_input_mousemove(ctx, event.motion.x, event.motion.y); 
                 float x_pos = event.motion.x;
                 float y_pos = event.motion.y; 
@@ -270,8 +187,7 @@ int main(int argc, char **argv)
             }
             case SDL_EVENT_MOUSE_WHEEL: mu_input_scroll(ctx, 0, event.wheel.y * -30); break;
             case SDL_EVENT_TEXT_INPUT: mu_input_text(ctx, event.text.text); break;
-
-            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            case SDL_EVENT_MOUSE_BUTTON_DOWN: break;
             case SDL_EVENT_MOUSE_BUTTON_UP: {
                 int b = button_map[event.button.button & 0xff];
                 if (b && event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) { mu_input_mousedown(ctx, event.button.x, event.button.y, b); }
@@ -358,8 +274,8 @@ int main(int argc, char **argv)
         
 
         //***************************WORLD SCENE RENDERER***************************
-        obj_model.angle += radian(90.0f);
-        render_faces(&shader, &obj_model, zbuffer, depth_buffer, &color_buffer, false, 0);
+        //obj_model.angle += radian(90.0f);
+        render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, false, 0);
         //render_wireframe(&obj_model, &color_buffer);
         for (int z = 0; z < buf_size; z++)
         {
@@ -436,15 +352,20 @@ int main(int argc, char **argv)
 
 
     free(cube.vertices);
+    free(cube.triangles);
     free(cube.normals);
+    free(cube.textures);
+
+    free(cube.uv);
+    free(cube.diffuse);
     
-    free(obj_model.triangles);
-    free(obj_model.uv);
-    free(obj_model.diffuse);
-    free(obj_model.specular);
-    free(obj_model.textures);
-    free(obj_model.vertices);
-    free(obj_model.normals);
+    // free(obj_model.triangles);
+    // free(obj_model.uv);
+    // free(obj_model.diffuse);
+    // free(obj_model.specular);
+    // free(obj_model.textures);
+    // free(obj_model.vertices);
+    // free(obj_model.normals);
 
 
     SDL_DestroySurface(draw_surface);
