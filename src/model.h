@@ -27,6 +27,7 @@ typedef struct Model {
     int texture_size;
     vector4f color;
 
+    vector3f position;
     float angle;
     float scale;
 }Model;

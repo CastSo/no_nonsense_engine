@@ -125,28 +125,30 @@ struct Model read_model_lines(char *file_name) {
             norm_i++;
 
         } else if (strcmp(line, "vt") == 0) {
+            char *endptr;
+            char *saveptr2;
+            float coords[3] = {0, 0, 0};
+            int i = 0;
             //Skips char vt
             line = strtok_r(NULL, delim, &saveptr1);
-
-            char *endptr;
-            float x = strtod(line, &endptr);
-            model.textures[texture_i].x = x;
-            
-            line = strtok_r(NULL, delim, &saveptr1);
-            
-            endptr = NULL;
-            float y = strtod(line, &endptr);
-            model.textures[texture_i].y = y;
-            line = strtok_r(NULL, delim, &saveptr1);
-
-            endptr = NULL;
-            model.textures[texture_i].z = strtod(line, &endptr);
-            line = strtok_r(NULL, delim, &saveptr1);
-            //printf("%f, %f, %f\n",  model.textures[texture_i].x, model.textures[texture_i].y, model.textures[texture_i].z);        
+            //Only checks the first index of each word
+            while (line != NULL) {    
+                endptr = NULL;
+                float t = strtod(line, &endptr);
+                coords[i] = t;
+                //printf("%f, ", coords[i]);
+                i++;
+                line = strtok_r(NULL, delim, &saveptr1);
+    
+            }
+            //printf("\n");
+                
+            model.textures[texture_i] = (vector3f){coords[0], coords[1], coords[2]};       
             texture_i++;
 
         }  
-         prev_line = strtok_r(buffer, delim, &saveptr1);
+        
+        prev_line = strtok_r(buffer, delim, &saveptr1);
 
     }
 

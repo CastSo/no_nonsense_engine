@@ -30,8 +30,8 @@ int text_height(mu_Font font) {
 int main(int argc, char **argv)
 {
 
-    int SCR_WIDTH = 800;
-    int SCR_HEIGHT = 800;
+    int SCR_WIDTH = 1000;
+    int SCR_HEIGHT = 1000;
 
     int mouse_x = 0;
     int mouse_y = 0;
@@ -97,12 +97,11 @@ int main(int argc, char **argv)
     Model cube = read_model_lines("./src/models/brickwall/cube.obj");
     cube.uv = load_tga("./src/models/brickwall/brickwall_normal.tga", &cube.header_uv);
     cube.diffuse = load_tga("./src/models/brickwall/brickwall_diffuse.tga", &cube.header_diffuse);
-
     
-    // Model obj_model  = read_model_lines("./src/models/diablo/diablo3_pose.obj");
-    // obj_model.uv = load_tga("./src/models/diablo/diablo3_pose_nm_tangent.tga", &obj_model.header_uv);
-    // obj_model.diffuse = load_tga("./src/models/diablo/diablo3_pose_diffuse.tga", &obj_model.header_diffuse);
-    // obj_model.specular = load_tga("./src/models/diablo/diablo3_pose_spec.tga", &obj_model.header_specular);
+    Model obj_model  = read_model_lines("./src/models/diablo/diablo3_pose.obj");
+    obj_model.uv = load_tga("./src/models/diablo/diablo3_pose_nm_tangent.tga", &obj_model.header_uv);
+    obj_model.diffuse = load_tga("./src/models/diablo/diablo3_pose_diffuse.tga", &obj_model.header_diffuse);
+    obj_model.specular = load_tga("./src/models/diablo/diablo3_pose_spec.tga", &obj_model.header_specular);
     
 
     bool first_mouse = true;
@@ -275,12 +274,16 @@ int main(int argc, char **argv)
 
         //***************************WORLD SCENE RENDERER***************************
         //obj_model.angle += radian(90.0f);
-        render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, false, 0);
-        //render_wireframe(&obj_model, &color_buffer);
-        for (int z = 0; z < buf_size; z++)
+
+        for (int i = 0; i < 4; i++)
         {
-            zbuffer[z] = -DBL_MAX;
-        }
+            cube.position = (vector3f){i+1.0f, 0.0f, 0.0f};
+            render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, false);
+            for (int z = 0; z < buf_size; z++)
+            {
+                zbuffer[z] = -DBL_MAX;
+            }  
+        } 
 
 
 
@@ -355,17 +358,17 @@ int main(int argc, char **argv)
     free(cube.triangles);
     free(cube.normals);
     free(cube.textures);
-
     free(cube.uv);
     free(cube.diffuse);
+
     
-    // free(obj_model.triangles);
-    // free(obj_model.uv);
-    // free(obj_model.diffuse);
-    // free(obj_model.specular);
-    // free(obj_model.textures);
-    // free(obj_model.vertices);
-    // free(obj_model.normals);
+    free(obj_model.triangles);
+    free(obj_model.uv);
+    free(obj_model.diffuse);
+    free(obj_model.specular);
+    free(obj_model.textures);
+    free(obj_model.vertices);
+    free(obj_model.normals);
 
 
     SDL_DestroySurface(draw_surface);

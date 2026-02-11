@@ -29,10 +29,10 @@ void triangle2D_texture(image_view* color_buffer, vector3f clip[3], vector3f tex
 void triangle3D(Shader *shader,  Model *model, float *zbuffer,  float* depth_buffer, image_view *color_buffer,  bool is_backface_cull);
 void render_pixel(Shader* shader, Model* model, float *zbuffer, float* depth_buffer, image_view* color_buffer, float x, float y, vector3f barycoord);
 
-void render_faces(Shader *shader, Model *model, float *zbuffer, float* depth_buffer, image_view* color_buffer,  bool is_bf_cull, float move);
+void render_faces(Shader *shader, Model *model, float *zbuffer, float* depth_buffer, image_view* color_buffer,  bool is_bf_cull);
 void render_wireframe(Model* model, image_view* color_buffer);
 
 void render_gui_texture(image_view* color_buffer, mu_Rect dst, mu_Rect src, mu_Color color);
 void render_gui(image_view* color_buffer, mu_Rect dst, mu_Rect src, mu_Color color);
 
-vector3f convert_to_ndc(vector3f vec, int width, int height);
+

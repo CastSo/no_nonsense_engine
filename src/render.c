@@ -47,12 +47,12 @@ void render_tga(image_view *color_buffer, image_view *img_buffer) {
 
 
 
-void render_faces(Shader *shader, Model *model, float *zbuffer, float *depth_buffer, image_view* color_buffer, bool is_bf_cull, float move) {
+void render_faces(Shader *shader, Model *model, float *zbuffer, float *depth_buffer, image_view* color_buffer, bool is_bf_cull) {
 
     //Reference vertices by induces
     //#pragma omp parallel for
     for (int v = 0; v < (model->triangles_size); v += 9) {
-
+        
 
         for (int f = 0; f < 3; f++) {
             vector3f vec = model->vertices[model->triangles[v+(f*3)]];
@@ -60,6 +60,7 @@ void render_faces(Shader *shader, Model *model, float *zbuffer, float *depth_buf
             
             //Transformations in local space
             local = rotateY(local, model->angle);
+            local = translate(local, model->position);
 
             vector4f position = multiply_mat4f_vec4f(shader->ModelView, local);
             shader->clip[f] = multiply_mat4f_vec4f(shader->Perspective, position); // in clip coordinates
