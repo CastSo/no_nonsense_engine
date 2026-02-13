@@ -243,9 +243,6 @@ void line(int ax, int ay, int bx, int by, image_view *color_buffer, color4ub col
 //Uses bounding box rasterization
 void triangle3D(Shader *shader,  Model *model, float *zbuffer, float* depth_buffer,  image_view *color_buffer, bool is_backface_cull) {
 
-    vector3f sun_direction = shader->light.direction;
-    vector3f cam_pos = shader->camera.position;
-
 
     vector4f ndc[3] = {
         { shader->clip[0].x / shader->clip[0].w, shader->clip[0].y / shader->clip[0].w, shader->clip[0].z / shader->clip[0].w, 1.0f },
@@ -301,12 +298,13 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer, float* depth_buff
         vector4f w2 = w2_row;
 
         for (p.x = fmax(bbminx, 0); p.x <=  fmin(bbmaxx, color_buffer->width-1); p.x += step_x_size){
-            //Groups by 4 pixels wide and 1 pixel high
+            //Groups by 2 pixels wide and 2 pixel high
             bool mask[4] = {(w0.x >= 0 && w1.x >= 0 && w2.x >= 0), 
                             (w0.y >= 0 && w1.y >= 0 && w2.y >= 0), 
                             (w0.z >= 0 && w1.z >= 0 && w2.z >= 0), 
                             (w0.w >= 0 && w1.w >= 0 && w2.w >= 0)}; 
             bool any_mask = mask[0] || mask[1] || mask[2]  || mask[3];
+
             vector3f all_bc[4] = {(vector3f){w0.x, w1.x, w2.x}, 
                                   (vector3f){w0.y, w1.y, w2.y},  
                                   (vector3f){w0.z, w1.z, w2.z}, 
@@ -513,7 +511,7 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buf
         
         vector4f vec_n_nm = multiply_mat4f_vec4f(transpose_mat4f(D), nm);
 
-        vector4f vec_l = (vector4f){shader->light.direction.x, shader->light.direction.y, shader->light.direction.z, 0.0f}; // direction toward sun
+        vector4f vec_l = subtract_vec4f(shader->light.position, interpolated_norm ); // direction toward sun
         
         int e = 35;
         vector4f vec_v = normalize_vec4f((vector4f){shader->camera.position.x, shader->camera.position.y, shader->camera.position.z, 0.0f}); //fragment to sun
@@ -556,6 +554,6 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buf
         //printf("%f, %f \n", current_depth.z, depth_buffer[i]);
         
         
-        *color_buffer->at(color_buffer, x, y) = (color4ub) {fragment.x, fragment.y, fragment.z,  fragment.w};
+        *color_buffer->at(color_buffer, fmin(fmax(x,0), color_buffer->width-1), fmin(fmax(y,0), color_buffer->height-1)) = (color4ub) {fragment.x, fragment.y, fragment.z,  fragment.w};
 
 }

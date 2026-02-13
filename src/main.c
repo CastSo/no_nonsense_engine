@@ -30,15 +30,15 @@ int text_height(mu_Font font) {
 int main(int argc, char **argv)
 {
 
-    int SCR_WIDTH = 1000;
-    int SCR_HEIGHT = 1000;
+    int SCR_WIDTH = 800;
+    int SCR_HEIGHT = 800;
 
     int mouse_x = 0;
     int mouse_y = 0;
 
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Surface *draw_surface = NULL;
-    draw_surface = SDL_ScaleSurface(draw_surface, 640, 480, SDL_SCALEMODE_PIXELART);
+    draw_surface = SDL_ScaleSurface(draw_surface, 320, 240, SDL_SCALEMODE_PIXELART);
 
     bool success = SDL_Init(SDL_INIT_VIDEO);
     if (!success)
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
     SDL_CaptureMouse(true);
     //cursor stays in window
     SDL_SetWindowRelativeMouseMode(window, true);
-    //SDL_SetWindowMouseGrab(window, true);
+    // SDL_SetWindowMouseGrab(window, true);
 
     bool run = true;
 
@@ -61,7 +61,8 @@ int main(int argc, char **argv)
     shader.camera.position = (vector3f){0, 0, 4};
     shader.camera.direction = (vector3f){0, 0, -1};
     shader.camera.up = (vector3f){0, 1, 0};
-    shader.light.direction = (vector3f){0, 0, 1};
+    shader.light.direction = (vector4f){0, 0, 1, 0};
+    shader.light.position = (vector4f){2, 0, 0, 0};
     
 
     shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction,shader.camera.position),shader.camera.up);
@@ -79,11 +80,12 @@ int main(int argc, char **argv)
     }
 
     //Time step setup
-    uint32_t current_time = 0;
-    uint32_t last_time;
-    int FPS = 60;
-    int64_t tick_interval = 1000 /FPS;
-    float delta_time = 0;
+    float fps;
+    uint32_t ticks = 0;
+    uint32_t max_fps = 20;
+    uint32_t tick_last = 0;
+    uint32_t fcount = 0;
+    uint32_t fstart = 0;
 
     float move = 0.05f;
 
@@ -116,8 +118,18 @@ int main(int argc, char **argv)
     ctx->text_height = text_height;
     bool mouse_down = false;
 
+    float light_angle = 0;
     while (run)
     {
+        tick_last = ticks;
+        ticks = SDL_GetTicks();
+        uint32_t flength = ticks - tick_last;
+        while(flength < 1000.0f/max_fps);
+       {     
+            ticks = SDL_GetTicks();
+            flength = ticks - tick_last;
+        }
+        fps = 1000.0f / flength;
         
         SDL_Event event;
 
@@ -144,6 +156,7 @@ int main(int argc, char **argv)
                 run = false;
                 break;
             case SDL_EVENT_MOUSE_MOTION: {
+                //rotate camera on left pressed
                 float x, y;
                 Uint32 buttons = SDL_GetMouseState(&x, &y);
                 if (!buttons || !SDL_BUTTON_LMASK)
@@ -266,22 +279,35 @@ int main(int argc, char **argv)
 
 
         // Set background color
-        //vector4f backgroundColor = {0.68f, 0.75f, 0.83f, 1.0f};
-        vector4f backgroundColor = {0.0f, 0.0f, 0.0f, 1.0f};
+        vector4f backgroundColor = {0.68f, 0.75f, 0.83f, 1.0f};
+        
         clear(&color_buffer, &backgroundColor);
         color_buffer.at = image_view_at;
         
 
         //***************************WORLD SCENE RENDERER***************************
-        obj_model.angle += radian(90.0f);
+       // obj_model.angle += radian(90.0f);
+        light_angle += radian(90.0f);        
+        shader.light.position = rotateY((vector4f){shader.light.position.x, shader.light.position.y, shader.light.position.z}, light_angle);
+        if(light_angle > radian(360))
+            light_angle = 0;
+        cube.position = (vector3f){0.0f, 2.0f, 1.0f};
+        render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, false);
+        obj_model.position = (vector3f){0.0f, 0.0f, 1.0f};
         render_faces(&shader, &obj_model, zbuffer, depth_buffer, &color_buffer, false);
-
+        //cube.angle += radian(90.0f);
         // for (int i = 0; i < 4; i++)
         // {
-        //     cube.position = (vector3f){i+1.0f, 0.0f, 0.0f};
+
+        //     cube.position = (vector3f){i+2.0f, 0.0f, 0.0f};
+        //     render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, false);
+        //     cube.position = (vector3f){i+2.0f, 0.0f, -1.0f};
         //     render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, false);
 
         // } 
+
+        // cube.position = (vector3f){2.0f, 4.0f, -0.8f};
+        // render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, false);
         for (int z = 0; z < buf_size; z++)
         {
             depth_buffer[z] = -DBL_MAX;

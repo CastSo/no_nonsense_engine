@@ -12,8 +12,8 @@ typedef struct Camera {
 } Camera;
 
 typedef struct Light {
-    vector3f position;
-    vector3f direction;
+    vector4f position;
+    vector4f direction;
 } Light;
 
 

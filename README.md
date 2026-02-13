@@ -5,12 +5,10 @@ A CPU-based software rasterizer, built to study graphics API like OpenGL. Under 
 ## CMake build commands 
 
 ```
-cd /path/to/tiny_renderer
-mkdir build
-cd ./build
-cmake ..
-cmake --build ./build
-./build/tiny_renderer
+cd /path/to/no_nonsense_engine
+cmake -S . -B build
+cmake --build build
+./build/no_nonsense_engine
 ```
 
 [1]: https://haqr.eu/tinyrenderer/
