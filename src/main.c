@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     shader.camera.direction = (vector3f){0, 0, -1};
     shader.camera.up = (vector3f){0, 1, 0};
     shader.light.direction = (vector4f){0, 0, 1, 0};
-    shader.light.position = (vector4f){2, 0, 0, 0};
+    shader.light.position = (vector4f){2, 1, -2, 0};
     
 
     shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction,shader.camera.position),shader.camera.up);
@@ -291,10 +291,18 @@ int main(int argc, char **argv)
         shader.light.position = rotateY((vector4f){shader.light.position.x, shader.light.position.y, shader.light.position.z}, light_angle);
         if(light_angle > radian(360))
             light_angle = 0;
-        cube.position = (vector3f){0.0f, 2.0f, 1.0f};
-        render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, false);
+        cube.position = (vector3f){0.0f, -2.0f, 1.0f};
+        cube.scale = 1.0f;
+        render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, true);
+
         obj_model.position = (vector3f){0.0f, 0.0f, 1.0f};
-        render_faces(&shader, &obj_model, zbuffer, depth_buffer, &color_buffer, false);
+        obj_model.scale = 1.0f;
+        render_faces(&shader, &obj_model, zbuffer, depth_buffer, &color_buffer, true);
+
+        //Color position cube
+        cube.position = (vector3f){shader.light.position.x, shader.light.position.y, shader.light.position.z};
+        cube.scale = 0.7f;
+        render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, true);
         //cube.angle += radian(90.0f);
         // for (int i = 0; i < 4; i++)
         // {

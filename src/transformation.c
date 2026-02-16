@@ -69,10 +69,10 @@ vector4f rotateZ(vector4f v, float a) {
 
 }
 
-vector4f scale(vector4f v, vector3f s) {
-    matrix4f mat = {s.x, 0, 0, 0,
-                    0, s.y,0, 0,
-                    0, 0, s.z, 0,
+vector4f scale(vector4f v, float s) {
+    matrix4f mat = {s, 0, 0, 0,
+                    0, s, 0, 0,
+                    0, 0, s, 0,
                     0, 0, 0, 1};
     
     return multiply_mat4f_vec4f(mat, v);

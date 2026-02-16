@@ -61,6 +61,7 @@ void render_faces(Shader *shader, Model *model, float *zbuffer, float *depth_buf
             //Transformations in local space
             local = rotateY(local, model->angle);
             local = translate(local, model->position);
+            local = scale(local, model->scale);
 
             vector4f position = multiply_mat4f_vec4f(shader->ModelView, local);
             shader->clip[f] = multiply_mat4f_vec4f(shader->Perspective, position); // in clip coordinates
@@ -513,7 +514,7 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buf
 
         vector4f vec_l = subtract_vec4f(shader->light.position, interpolated_norm ); // direction toward sun
         
-        int e = 35;
+        int e = 32;
         vector4f vec_v = normalize_vec4f((vector4f){shader->camera.position.x, shader->camera.position.y, shader->camera.position.z, 0.0f}); //fragment to sun
         vector4f vec_r = normalize_vec4f(subtract_vec4f(scale_vec4f(scale_vec4f(vec_n_nm, dot_vec4f(vec_n_nm, vec_l)), 2), vec_l)); //reflection of sun
 
@@ -530,12 +531,12 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buf
 
 
         matrix4f light_transform = shader->Perspective;
-        matrix4f camera_transform = inverse_mat4f(shader->ModelView);
+        matrix4f camera_transform = shader->ModelView;
         
         //Fragment for depth map testing
         vector4f fragment;
         float phong;
-        phong = ambient + 1 * (diffuse + specular);
+        phong = ambient + 0.6 * (diffuse + specular);
         fragment = scale_vec4f((vector4f){diff_color.r, diff_color.g, diff_color.b, diff_color.a}, phong);
         vector4f current_depth = multiply_mat4f_vec4f(multiply_mat4f(light_transform, camera_transform), fragment);
         //depth = scale_vec4f(depth, 1/depth.w);
@@ -548,12 +549,13 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buf
             phong = ambient + 0 * (diffuse + specular);
             depth_buffer[i] = current_depth.z;
         }else {
-            phong = ambient + 1 * (diffuse + specular);
+            //Using 0.6 to fix missing color channels
+            phong = ambient + 0.6 * (diffuse + specular);
         }
         fragment = scale_vec4f((vector4f){diff_color.r, diff_color.g, diff_color.b, diff_color.a}, phong);
         //printf("%f, %f \n", current_depth.z, depth_buffer[i]);
         
         
-        *color_buffer->at(color_buffer, fmin(fmax(x,0), color_buffer->width-1), fmin(fmax(y,0), color_buffer->height-1)) = (color4ub) {fragment.x, fragment.y, fragment.z,  fragment.w};
+        *color_buffer->at(color_buffer, x, y) = (color4ub) {fragment.x, fragment.y, fragment.z,  fragment.w};
 
 }

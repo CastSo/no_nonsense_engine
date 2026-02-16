@@ -43,7 +43,7 @@ matrix4f lookat(vector3f eye, vector3f center, vector3f up);
 vector4f rotateY(vector4f v, float a);
 vector4f rotateX(vector4f v, float a);
 vector4f rotateZ(vector4f v, float a);
-vector4f scale(vector4f v, vector3f s);
+vector4f scale(vector4f v, float s);
 vector4f translate(vector4f v, vector3f t);
 
 vector3f *find_normals(vector3f* v, int vertices_size, int* triangles, int triangles_size);

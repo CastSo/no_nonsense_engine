@@ -127,7 +127,7 @@ struct Model load_obj(char *file_name) {
         } else if (strcmp(line, "vt") == 0) {
             char *endptr;
             char *saveptr2;
-            float coords[3] = {0, 0, 0};
+            float coords[3] = {0, 0, 1};
             int i = 0;
             //Skips char vt
             line = strtok_r(NULL, delim, &saveptr1);
@@ -185,8 +185,8 @@ vector4f normal(TGAHeader tga_header, color4ub *image, vector2f uv) {
 //Returns just the pixel RGB
 color4ub sample2D(TGAHeader tga_header, color4ub *image, vector2f uv) {
     //normal to screen space
-    int x = (int)(uv.x * tga_header.width);
-    int y = (int)((1-uv.y) * tga_header.height);
+    int x = fmin((int)(uv.x * tga_header.width), tga_header.width-1);
+    int y = fmin((int)((1-uv.y) * tga_header.height), tga_header.height-1);
 
     //Fragment samples from image
     int i = (x + y * tga_header.width);
