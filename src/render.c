@@ -47,7 +47,7 @@ void render_tga(image_view *color_buffer, image_view *img_buffer) {
 
 
 
-void render_faces(Shader *shader, Model *model, float *zbuffer, float *depth_buffer, image_view* color_buffer, bool is_bf_cull) {
+void render_faces(Shader *shader, Model *model, float *zbuffer, float* depth_buffer, image_view* color_buffer, bool is_bf_cull) {
 
     //Reference vertices by induces
     //#pragma omp parallel for
@@ -534,28 +534,30 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buf
         matrix4f camera_transform = shader->ModelView;
         
         //Fragment for depth map testing
-        vector4f fragment;
-        float phong;
-        phong = ambient + 0.6 * (diffuse + specular);
-        fragment = scale_vec4f((vector4f){diff_color.r, diff_color.g, diff_color.b, diff_color.a}, phong);
-        vector4f current_depth = multiply_mat4f_vec4f(multiply_mat4f(light_transform, camera_transform), fragment);
-        //depth = scale_vec4f(depth, 1/depth.w);
-        int i = (int)(x+y*color_buffer->width);
+        // int depth_x = uv.x * color_buffer->width;
+        // int depth_y = uv.y * color_buffer->height;
+        int frag_i = x + y * color_buffer->width;
+        vector4f frag_position = {x, y, zbuffer[frag_i], 1.0f};
+        vector3f proj_coords = scale_vec3f((vector3f){frag_position.x, frag_position.y, frag_position.z}, 1/frag_position.w);
+        proj_coords = add_vec3f(scale_vec3f(proj_coords, 0.5f), (vector3f){0.5f, 0.5f, 0.5f});
+        float current_depth = proj_coords.z;
+        float closest_depth = depth_buffer[frag_i];
         
-        
-        //Fragment lies in shadow
-        float bias = 0.05f; //Avoid shadow acne
-        if(current_depth.z-bias <= depth_buffer[i]){    
-            phong = ambient + 0 * (diffuse + specular);
-            depth_buffer[i] = current_depth.z;
+        float bias = 0.0f; //Avoid shadow acne
+        float shadow = 0.0f;
+        if(closest_depth - bias < current_depth){    
+            shadow = 0.4f;
         }else {
-            //Using 0.6 to fix missing color channels
-            phong = ambient + 0.6 * (diffuse + specular);
+            shadow = 1.0f;
         }
-        fragment = scale_vec4f((vector4f){diff_color.r, diff_color.g, diff_color.b, diff_color.a}, phong);
-        //printf("%f, %f \n", current_depth.z, depth_buffer[i]);
+        depth_buffer[frag_i] = current_depth;
+        //Using 0.6 to fix missing color channels
+        float phong = ambient + (1.0f-shadow) * (diffuse + specular);
+
+        vector4f fragment = scale_vec4f((vector4f){diff_color.r, diff_color.g, diff_color.b, diff_color.a}, phong);
+        //printf("%f, %f \n", closest_depth, proj_coords.z);
         
         
-        *color_buffer->at(color_buffer, x, y) = (color4ub) {fragment.x, fragment.y, fragment.z,  fragment.w};
+        *color_buffer->at(color_buffer, fmin(fmax(x, 0), color_buffer->width), fmin(fmax(y, 0), color_buffer->height)) = (color4ub) {fragment.x, fragment.y, fragment.z,  fragment.w};
 
 }

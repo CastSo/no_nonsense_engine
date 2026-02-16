@@ -76,7 +76,7 @@ int main(int argc, char **argv)
     for (int z = 0; z < buf_size; z++)
     {
         zbuffer[z] = -DBL_MAX;
-        depth_buffer[z] = -DBL_MAX;
+        //depth_buffer[z] = -DBL_MAX;
     }
 
     //Time step setup
@@ -96,7 +96,12 @@ int main(int argc, char **argv)
     color_buffer.width = SCR_WIDTH;
     color_buffer.height = SCR_HEIGHT;
 
-    Model cube = load_obj("./src/models/brickwall/cube.obj");
+    Model floor = load_obj("./src/models/plane/floor.obj");
+    floor.uv = load_tga("./src/models/plane/floor_nm_tangent.tga", &floor.header_uv);
+    floor.diffuse = load_tga("./src/models/plane/floor_diffuse.tga", &floor.header_diffuse);
+    floor.specular = load_tga("./src/models/plane/floor_spec.tga", &floor.header_specular);
+
+    Model cube = load_obj("./src/models/primitives/cube.obj");
     cube.uv = load_tga("./src/models/brickwall/brickwall_normal.tga", &cube.header_uv);
     cube.diffuse = load_tga("./src/models/brickwall/brickwall_diffuse.tga", &cube.header_diffuse);
     
@@ -236,6 +241,12 @@ int main(int argc, char **argv)
                         shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
                     }
 
+                    if (event.key.key == SDLK_R) {
+                        shader.camera.position = (vector3f){0, 0, 4};
+                         shader.camera.direction = (vector3f){0,0,-1};
+                        shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
+                    }
+
 
                 }
                 break;
@@ -291,31 +302,31 @@ int main(int argc, char **argv)
         shader.light.position = rotateY((vector4f){shader.light.position.x, shader.light.position.y, shader.light.position.z}, light_angle);
         if(light_angle > radian(360))
             light_angle = 0;
-        cube.position = (vector3f){0.0f, -2.0f, 1.0f};
-        cube.scale = 1.0f;
-        render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, true);
+        floor.position = (vector3f){0.0f, 0.0f, 0.0f};
+        floor.scale = 1.0f;
+        render_faces(&shader, &floor, zbuffer, depth_buffer, &color_buffer, true);
 
-        obj_model.position = (vector3f){0.0f, 0.0f, 1.0f};
-        obj_model.scale = 1.0f;
+        obj_model.position = (vector3f){0.0f, -1.0f, 0.0f};
+        obj_model.scale = 0.5f;
         render_faces(&shader, &obj_model, zbuffer, depth_buffer, &color_buffer, true);
 
-        //Color position cube
-        cube.position = (vector3f){shader.light.position.x, shader.light.position.y, shader.light.position.z};
-        cube.scale = 0.7f;
+        //Light position floor
+        cube.position = (vector3f){3.0f, -4.0f, 0.0f};
+        cube.scale = 0.2f;
         render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, true);
-        //cube.angle += radian(90.0f);
+        //floor.angle += radian(90.0f);
         // for (int i = 0; i < 4; i++)
         // {
 
-        //     cube.position = (vector3f){i+2.0f, 0.0f, 0.0f};
-        //     render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, false);
-        //     cube.position = (vector3f){i+2.0f, 0.0f, -1.0f};
-        //     render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, false);
+        //     floor.position = (vector3f){i+2.0f, 0.0f, 0.0f};
+        //     render_faces(&shader, &floor, zbuffer, depth_buffer, &color_buffer, false);
+        //     floor.position = (vector3f){i+2.0f, 0.0f, -1.0f};
+        //     render_faces(&shader, &floor, zbuffer, depth_buffer, &color_buffer, false);
 
         // } 
 
-        // cube.position = (vector3f){2.0f, 4.0f, -0.8f};
-        // render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, false);
+        // floor.position = (vector3f){2.0f, 4.0f, -0.8f};
+        // render_faces(&shader, &floor, zbuffer, depth_buffer, &color_buffer, false);
         for (int z = 0; z < buf_size; z++)
         {
             depth_buffer[z] = -DBL_MAX;
@@ -391,6 +402,14 @@ int main(int argc, char **argv)
     free(ctx);
 
 
+    free(floor.vertices);
+    free(floor.triangles);
+    free(floor.normals);
+    free(floor.textures);
+    free(floor.uv);
+    free(floor.diffuse);
+    free(floor.specular);
+    
     free(cube.vertices);
     free(cube.triangles);
     free(cube.normals);
