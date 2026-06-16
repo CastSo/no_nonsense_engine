@@ -209,3 +209,5 @@ vector4f normalize_vec4f(vector4f v) {
     return (vector4f){v.x/norm, v.y/norm, v.z/norm, v.w/norm};
 }
 
+
+

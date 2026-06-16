@@ -91,9 +91,12 @@ struct color4ub *load_tga(char *file_name, TGAHeader *tga_header) {
     for (int i = 0; i < width * height; i++) {
         if(tga_is_RLE) {
             if (RLE_count == 0) {
+                //run length encoding
                 int RLE_cmd = getc(fptr);
+                
                 RLE_count = 1 + (RLE_cmd & 127);
                 RLE_repeating = RLE_cmd >> 7;
+                //printf("(u8int: %d, [%d, %d]), ", RLE_cmd, RLE_count, RLE_repeating);
                 read_next_pixel = 1;
             } else if (!RLE_repeating) {
                 read_next_pixel = 1;
@@ -113,11 +116,13 @@ struct color4ub *load_tga(char *file_name, TGAHeader *tga_header) {
                 for(int j = 0; j*8 < tga_header->bits_per_pixel; j++)
 				{
 					raw_data[j] = tga_palette[pal_idx+j];
+                    
 				}
             }else {
                 for(int j = 0; j*8 < tga_header->bits_per_pixel; j++)
 				{
 					raw_data[j] = getc(fptr);
+                    //printf("%d, ", raw_data[j]);
 				}
             }
             //Convert raw to RGBA

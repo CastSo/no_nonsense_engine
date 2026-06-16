@@ -64,14 +64,17 @@ void render_faces(Shader *shader, Model *model, float *zbuffer, float* depth_buf
             local = scale(local, model->scale);
 
             vector4f position = multiply_mat4f_vec4f(shader->ModelView, local);
+            shader->eye[f] = position;
             shader->clip[f] = multiply_mat4f_vec4f(shader->Perspective, position); // in clip coordinates
-            
+
             
             //Uses vt from model
-            shader->varying_uv[f] = model->textures[model->triangles[v+(f*3+1)]];
-            vector3f n = model->textures[model->triangles[v+(f*3+2)]];
-            shader->norm[f] = multiply_mat4f_vec4f(inverse_mat4f(shader->ModelView), (vector4f){n.x, n.y, n.z, 0});
-
+            if(model->is_textured == true)
+            {
+                shader->varying_uv[f] = model->textures[model->triangles[v+(f*3+1)]];
+                vector3f n = model->textures[model->triangles[v+(f*3+2)]];
+                shader->norm[f] = multiply_mat4f_vec4f(inverse_mat4f(shader->ModelView), (vector4f){n.x, n.y, n.z, 0});
+            }
         }
 
         
@@ -80,6 +83,35 @@ void render_faces(Shader *shader, Model *model, float *zbuffer, float* depth_buf
     }
     
 }
+
+void render_faces_color(Shader *shader, Model *model, float *zbuffer, float *depth_buffer, image_view* color_buffer,  bool is_bf_cull) {
+    //#pragma omp parallel for
+    for (int v = 0; v < (model->triangles_size); v += 9) {
+        
+
+        for (int f = 0; f < 3; f++) {
+            vector3f vec = model->vertices[model->triangles[v+(f*3)]];
+            vector4f local = (vector4f){vec.x, vec.y, vec.z, 1.};
+            
+            //Transformations in local space
+            local = rotateY(local, model->angle);
+            local = translate(local, model->position);
+            local = scale(local, model->scale);
+
+            vector4f position = multiply_mat4f_vec4f(shader->ModelView, local);
+            shader->clip[f] = multiply_mat4f_vec4f(shader->Perspective, position); // in clip coordinates
+            
+     
+        }
+
+        
+
+        triangle3D(shader, model, zbuffer, depth_buffer, color_buffer, is_bf_cull);
+    }
+}
+
+
+
 
 void render_wireframe(Model* model, image_view* color_buffer) {
     int width_scale = 800;
@@ -244,7 +276,6 @@ void line(int ax, int ay, int bx, int by, image_view *color_buffer, color4ub col
 //Uses bounding box rasterization
 void triangle3D(Shader *shader,  Model *model, float *zbuffer, float* depth_buffer,  image_view *color_buffer, bool is_backface_cull) {
 
-
     vector4f ndc[3] = {
         { shader->clip[0].x / shader->clip[0].w, shader->clip[0].y / shader->clip[0].w, shader->clip[0].z / shader->clip[0].w, 1.0f },
         { shader->clip[1].x / shader->clip[1].w, shader->clip[1].y / shader->clip[1].w, shader->clip[1].z / shader->clip[1].w, 1.0f },
@@ -299,7 +330,8 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer, float* depth_buff
         vector4f w2 = w2_row;
 
         for (p.x = fmax(bbminx, 0); p.x <=  fmin(bbmaxx, color_buffer->width-1); p.x += step_x_size){
-            //Groups by 2 pixels wide and 2 pixel high
+            //Checks if negative barycentric coordinates
+            //Groups by 2 pixels wide and 2 pixel high. Creates Mortan curve.
             bool mask[4] = {(w0.x >= 0 && w1.x >= 0 && w2.x >= 0), 
                             (w0.y >= 0 && w1.y >= 0 && w2.y >= 0), 
                             (w0.z >= 0 && w1.z >= 0 && w2.z >= 0), 
@@ -330,8 +362,10 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer, float* depth_buff
                     }
 
                     zbuffer[(int)(x+y*color_buffer->width)] = z;  
-                    render_pixel(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);
-
+                    if(model->is_textured)
+                        render_pixel_texture(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);
+                    else
+                        render_pixel_color(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);
                 }
 
                 for(int i = 0; i <= 1; i++){
@@ -351,8 +385,10 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer, float* depth_buff
                     }
 
                     zbuffer[(int)(x+y*color_buffer->width)] = z;  
-                    render_pixel(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);
-
+                    if(model->is_textured)
+                        render_pixel_texture(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);
+                    else
+                        render_pixel_color(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);    
                 }
                 
             }
@@ -368,6 +404,9 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer, float* depth_buff
     }
 
 }
+
+
+
 
 void triangle2D(image_view* color_buffer, vector3f v[3], color4ub color, bool is_backface_cull) {
     
@@ -484,7 +523,7 @@ void triangle2D_texture(image_view* color_buffer, vector3f clip[3], vector3f tex
 
 
 
-void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buffer, image_view* color_buffer,  float x, float y, vector3f barycoord) { 
+void render_pixel_texture(Shader* shader, Model* model, float* zbuffer, float* depth_buffer, image_view* color_buffer,  float x, float y, vector3f barycoord) { 
         //*******Find fragment colors using normal data and perspective transformation*******
         //Setup normals in tangent space
         vector4f e1 = subtract_vec4f(shader->clip[1], shader->clip[0]);
@@ -526,7 +565,7 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buf
             spec_color = sample2D(model->header_specular, model->specular, (vector2f){uv.x, uv.y});
         else
             spec_color = (color4ub) {1.0f, 1.0f, 1.0f, 1.0f};
-        color4ub diff_color = sample2D(model->header_diffuse, model->diffuse, (vector2f){uv.x, uv.y});
+        color4ub diff_color = sample2D(model->header_diffuse, model->diffuse, (vector2f){uv.x, uv.y}); //Pixel color
         float specular = (.5+2.*spec_color.r/255.) * pow(fmax(0, dot_vec4f(vec_r, vec_v)), e);
 
 
@@ -542,6 +581,7 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buf
         proj_coords = add_vec3f(scale_vec3f(proj_coords, 0.5f), (vector3f){0.5f, 0.5f, 0.5f});
         float current_depth = proj_coords.z;
         float closest_depth = depth_buffer[frag_i];
+        //printf("%f, ", vec_v);
         
         float bias = 0.0f; //Avoid shadow acne
         float shadow = 0.0f;
@@ -560,4 +600,58 @@ void render_pixel(Shader* shader, Model* model, float* zbuffer, float* depth_buf
         
         *color_buffer->at(color_buffer, fmin(fmax(x, 0), color_buffer->width), fmin(fmax(y, 0), color_buffer->height)) = (color4ub) {fragment.x, fragment.y, fragment.z,  fragment.w};
 
+}
+
+void render_pixel_color(Shader* shader, Model* model, float *zbuffer, float* depth_buffer, image_view* color_buffer, float x, float y, vector3f barycoord) {
+    
+    int e = 32;
+   
+    vector3f AB = subtract_vec3f((vector3f){shader->eye[0].x, shader->eye[0].y, shader->eye[0].z}, (vector3f){shader->eye[1].x, shader->eye[1].y, shader->eye[1].z});
+    vector3f AC = subtract_vec3f((vector3f){shader->eye[0].x, shader->eye[0].y, shader->eye[0].z}, (vector3f){shader->eye[2].x, shader->eye[2].y, shader->eye[2].z});
+   
+    vector3f vec_n = normalize_vec3f(cross(AB, AC)); // orthogonal to triangle
+    vector3f vec_l = normalize_vec3f((vector3f){shader->light.position.x, shader->light.position.y, shader->light.position.z}); // direction toward sun
+    vector3f vec_r = subtract_vec3f(scale_vec3f(scale_vec3f(vec_n,2), dot_vec3f(vec_n, vec_l)), vec_l); //reflection of sun
+    vector3f vec_v = normalize_vec3f(shader->camera.position); //fragment to sun
+    
+    //Phong colors
+    float diffuse = fmax(0, dot_vec3f(vec_n, vec_l));
+    float ambient = .3;
+
+    color4ub spec_color;
+    // if(model->specular != NULL)
+    //     spec_color = (color4ub){model->color.x, model->color.y, model->color.z, 1.0f};
+    // else
+    spec_color = (color4ub) {1.0f, 1.0f, 1.0f, 1.0f};
+    color4ub diff_color =  (color4ub){model->color.x, model->color.y, model->color.z, 1.0f};//Pixel color
+    float specular = (.5+2.*spec_color.r/255.) * pow(fmax(0, dot_vec3f(vec_r, vec_v)), e);
+    matrix4f light_transform = shader->Perspective;
+    matrix4f camera_transform = shader->ModelView;
+    
+    //Fragment for depth map testing
+    // int depth_x = uv.x * color_buffer->width;
+    // int depth_y = uv.y * color_buffer->height;
+    int frag_i = x + y * color_buffer->width;
+    vector4f frag_position = {x, y, zbuffer[frag_i], 1.0f};
+    vector3f proj_coords = scale_vec3f((vector3f){frag_position.x, frag_position.y, frag_position.z}, 1/frag_position.w);
+    proj_coords = add_vec3f(scale_vec3f(proj_coords, 0.5f), (vector3f){0.5f, 0.5f, 0.5f});
+    float current_depth = proj_coords.z;
+    float closest_depth = depth_buffer[frag_i];
+    //printf("%f, ", vec_v);
+    
+    float bias = 0.0f; //Avoid shadow acne
+    float shadow = 0.0f;
+    if(closest_depth - bias < current_depth){    
+        shadow = 0.4f;
+    }else {
+        shadow = 1.0f;
+    }
+    depth_buffer[frag_i] = current_depth;
+    //Using 0.6 to fix missing color channels
+    float phong = ambient + (1.0f-shadow) * (diffuse + specular);
+    vector4f fragment = scale_vec4f((vector4f){diff_color.r, diff_color.g, diff_color.b, diff_color.a}, phong);
+    //printf("%f, %f \n", closest_depth, proj_coords.z);
+    
+    
+    *color_buffer->at(color_buffer, fmin(fmax(x, 0), color_buffer->width), fmin(fmax(y, 0), color_buffer->height)) = (color4ub) {fragment.x, fragment.y, fragment.z,  fragment.w};
 }

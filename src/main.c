@@ -30,8 +30,8 @@ int text_height(mu_Font font) {
 int main(int argc, char **argv)
 {
 
-    int SCR_WIDTH = 800;
-    int SCR_HEIGHT = 800;
+    int SCR_WIDTH = 1000;
+    int SCR_HEIGHT = 840;
 
     int mouse_x = 0;
     int mouse_y = 0;
@@ -97,19 +97,26 @@ int main(int argc, char **argv)
     color_buffer.height = SCR_HEIGHT;
 
     Model floor = load_obj("./src/models/plane/floor.obj");
+    floor.is_textured = true;
     floor.uv = load_tga("./src/models/plane/floor_nm_tangent.tga", &floor.header_uv);
     floor.diffuse = load_tga("./src/models/plane/floor_diffuse.tga", &floor.header_diffuse);
     floor.specular = load_tga("./src/models/plane/floor_spec.tga", &floor.header_specular);
 
     Model cube = load_obj("./src/models/primitives/cube.obj");
+    cube.is_textured = true;
     cube.uv = load_tga("./src/models/brickwall/brickwall_normal.tga", &cube.header_uv);
     cube.diffuse = load_tga("./src/models/brickwall/brickwall_diffuse.tga", &cube.header_diffuse);
     
-    Model obj_model  = load_obj("./src/models/diablo/diablo3_pose.obj");
-    obj_model.uv = load_tga("./src/models/diablo/diablo3_pose_nm_tangent.tga", &obj_model.header_uv);
-    obj_model.diffuse = load_tga("./src/models/diablo/diablo3_pose_diffuse.tga", &obj_model.header_diffuse);
-    obj_model.specular = load_tga("./src/models/diablo/diablo3_pose_spec.tga", &obj_model.header_specular);
-    
+    Model diablo  = load_obj("./src/models/diablo/diablo3_pose.obj");
+    diablo.is_textured = true;
+    diablo.uv = load_tga("./src/models/diablo/diablo3_pose_nm_tangent.tga", &diablo.header_uv);
+    diablo.diffuse = load_tga("./src/models/diablo/diablo3_pose_diffuse.tga", &diablo.header_diffuse);
+    diablo.specular = load_tga("./src/models/diablo/diablo3_pose_spec.tga", &diablo.header_specular);
+
+    Model teapot = load_obj("./src/models/utah_teapot.obj");
+    teapot.is_textured = false;
+    teapot.color = (vector4f){0.0f, 255.0f, 0.0f, 1.0f};
+
 
     bool first_mouse = true;
     float yaw   = -90.0f;	
@@ -165,7 +172,8 @@ int main(int argc, char **argv)
                 float x, y;
                 Uint32 buttons = SDL_GetMouseState(&x, &y);
                 if (!buttons || !SDL_BUTTON_LMASK)
-                    continue;
+                {    
+                    break;}
                 mu_input_mousemove(ctx, event.motion.x, event.motion.y); 
                 float x_pos = event.motion.x;
                 float y_pos = event.motion.y; 
@@ -297,7 +305,7 @@ int main(int argc, char **argv)
         
 
         //***************************WORLD SCENE RENDERER***************************
-       // obj_model.angle += radian(90.0f);
+       // diablo.angle += radian(90.0f);
         light_angle += radian(90.0f);        
         shader.light.position = rotateY((vector4f){shader.light.position.x, shader.light.position.y, shader.light.position.z}, light_angle);
         if(light_angle > radian(360))
@@ -306,27 +314,18 @@ int main(int argc, char **argv)
         floor.scale = 1.0f;
         render_faces(&shader, &floor, zbuffer, depth_buffer, &color_buffer, true);
 
-        obj_model.position = (vector3f){0.0f, -1.0f, 0.0f};
-        obj_model.scale = 0.5f;
-        render_faces(&shader, &obj_model, zbuffer, depth_buffer, &color_buffer, true);
+        diablo.position = (vector3f){0.0f, -1.0f, 0.0f};
+        diablo.scale = 0.5f;
+        //render_faces(&shader, &diablo, zbuffer, depth_buffer, &color_buffer, true);
 
         //Light position floor
         cube.position = (vector3f){3.0f, -4.0f, 0.0f};
         cube.scale = 0.2f;
         render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, true);
-        //floor.angle += radian(90.0f);
-        // for (int i = 0; i < 4; i++)
-        // {
 
-        //     floor.position = (vector3f){i+2.0f, 0.0f, 0.0f};
-        //     render_faces(&shader, &floor, zbuffer, depth_buffer, &color_buffer, false);
-        //     floor.position = (vector3f){i+2.0f, 0.0f, -1.0f};
-        //     render_faces(&shader, &floor, zbuffer, depth_buffer, &color_buffer, false);
-
-        // } 
-
-        // floor.position = (vector3f){2.0f, 4.0f, -0.8f};
-        // render_faces(&shader, &floor, zbuffer, depth_buffer, &color_buffer, false);
+        teapot.scale = 0.1f;
+        render_faces(&shader, &teapot, zbuffer, depth_buffer, &color_buffer, true);
+        
         for (int z = 0; z < buf_size; z++)
         {
             depth_buffer[z] = -DBL_MAX;
@@ -418,14 +417,19 @@ int main(int argc, char **argv)
     free(cube.diffuse);
 
     
-    free(obj_model.triangles);
-    free(obj_model.uv);
-    free(obj_model.diffuse);
-    free(obj_model.specular);
-    free(obj_model.textures);
-    free(obj_model.vertices);
-    free(obj_model.normals);
+    free(diablo.triangles);
+    free(diablo.uv);
+    free(diablo.diffuse);
+    free(diablo.specular);
+    free(diablo.textures);
+    free(diablo.vertices);
+    free(diablo.normals);
 
+    free(teapot.vertices);
+    free(teapot.triangles);
+    free(teapot.normals);
+    free(teapot.textures);
+    free(teapot.diffuse);
 
     SDL_DestroySurface(draw_surface);
     // SDL_DestroyEvent(event);

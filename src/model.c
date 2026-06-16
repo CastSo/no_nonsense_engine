@@ -182,7 +182,7 @@ vector4f normal(TGAHeader tga_header, color4ub *image, vector2f uv) {
     return color;
 }
 
-//Returns just the pixel RGB
+//Returns just the pixel RGB of an image
 color4ub sample2D(TGAHeader tga_header, color4ub *image, vector2f uv) {
     //normal to screen space
     int x = fmin(fmax(0,(int)(uv.x * tga_header.width)), tga_header.width-1);

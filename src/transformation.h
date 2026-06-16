@@ -27,6 +27,7 @@ typedef struct  Shader {
 
     //Triangles in different spaces
     vector4f clip[3];
+    vector4f eye[3];
     vector3f varying_uv[3];
     vector3f ndc[3];
     vector4f norm[3];
