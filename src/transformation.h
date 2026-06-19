@@ -37,7 +37,7 @@ typedef struct  Shader {
 
 void project(vector3f *v, int width, int height);
 
-matrix4f viewport(int x, int y, int w, int h);
+matrix4f viewport(int x, int y, int w, int h, int f, int n);
 matrix4f perspective(float f);
 matrix4f lookat(vector3f eye, vector3f center, vector3f up); 
 

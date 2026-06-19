@@ -58,16 +58,30 @@ int main(int argc, char **argv)
     bool run = true;
 
     Shader shader;
-    shader.camera.position = (vector3f){0, 0, 4};
+    
+
+    shader.camera.position = (vector3f){0, 1, 1.5};
     shader.camera.direction = (vector3f){0, 0, -1};
     shader.camera.up = (vector3f){0, 1, 0};
     shader.light.direction = (vector4f){0, 0, 1, 0};
-    shader.light.position = (vector4f){2, 1, -2, 0};
+    shader.light.position = (vector4f){2, 1, -1, 0};
+    float light_angle = (float)radian(45.0f);
+    shader.light.position = rotateY((vector4f){shader.light.position.x, shader.light.position.y, shader.light.position.z}, light_angle);
     
 
+    vector3f front;
+    float yaw   = -90.0f;	
+    float pitch =  -45.0f;
+    float last_x =  800.0f / 2.0;
+    float last_y =  600.0 / 2.0;
+
+    front.x = cos(radian(yaw) * cosf(radian(pitch)));
+    front.y = sin(radian(pitch));
+    front.z = sin(radian(yaw) * cosf(radian(pitch)));
+    shader.camera.direction = normalize_vec3f(front);
     shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction,shader.camera.position),shader.camera.up);
     shader.Perspective = perspective(norm_vec3f(subtract_vec3f(shader.camera.position,shader.camera.direction)));
-    shader.Viewport = viewport(SCR_WIDTH / 16.f, SCR_HEIGHT / 16.f, SCR_WIDTH * 7.f / 8.f, SCR_HEIGHT * 7.f / 8.f);
+    shader.Viewport = viewport(SCR_WIDTH / 16.f, SCR_HEIGHT / 16.f, SCR_WIDTH * 7.f / 8.f, SCR_HEIGHT * 7.f / 8.f, 1.0f, 0.0f);
 
 
     int buf_size = SCR_WIDTH * SCR_HEIGHT;
@@ -109,20 +123,17 @@ int main(int argc, char **argv)
     
     Model diablo  = load_obj("./src/models/diablo/diablo3_pose.obj");
     diablo.is_textured = true;
+    diablo.color = (vector4f){255.0f, 0.0f, 0.0f, 1.0f};
     diablo.uv = load_tga("./src/models/diablo/diablo3_pose_nm_tangent.tga", &diablo.header_uv);
     diablo.diffuse = load_tga("./src/models/diablo/diablo3_pose_diffuse.tga", &diablo.header_diffuse);
     diablo.specular = load_tga("./src/models/diablo/diablo3_pose_spec.tga", &diablo.header_specular);
 
     Model teapot = load_obj("./src/models/utah_teapot.obj");
     teapot.is_textured = false;
-    teapot.color = (vector4f){0.0f, 255.0f, 0.0f, 1.0f};
+    teapot.color = (vector4f){99.0f, 101.0f, 164.0f, 1.0f};
 
 
     bool first_mouse = true;
-    float yaw   = -90.0f;	
-    float pitch =  0.0f;
-    float last_x =  800.0f / 2.0;
-    float last_y =  600.0 / 2.0;
 
     mu_Context *ctx = malloc(sizeof(mu_Context));
     mu_init(ctx);
@@ -130,7 +141,6 @@ int main(int argc, char **argv)
     ctx->text_height = text_height;
     bool mouse_down = false;
 
-    float light_angle = 0;
     while (run)
     {
         tick_last = ticks;
@@ -168,12 +178,17 @@ int main(int argc, char **argv)
                 run = false;
                 break;
             case SDL_EVENT_MOUSE_MOTION: {
+                // x: pitch
+                // y: yaw
+                // z: roll
+                
                 //rotate camera on left pressed
                 float x, y;
                 Uint32 buttons = SDL_GetMouseState(&x, &y);
                 if (!buttons || !SDL_BUTTON_LMASK)
                 {    
-                    break;}
+                    break;
+                }
                 mu_input_mousemove(ctx, event.motion.x, event.motion.y); 
                 float x_pos = event.motion.x;
                 float y_pos = event.motion.y; 
@@ -205,9 +220,10 @@ int main(int argc, char **argv)
                 front.x = cos(radian(yaw) * cosf(radian(pitch)));
                 front.y = sin(radian(pitch));
                 front.z = sin(radian(yaw) * cosf(radian(pitch)));
-                shader.camera.direction = (front);
-                shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
-
+                shader.camera.direction = normalize_vec3f(front);
+                shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up); //updates transformations
+                shader.Perspective = perspective(norm_vec3f(subtract_vec3f(shader.camera.position,shader.camera.direction)));
+                
                 break;
             }
             case SDL_EVENT_MOUSE_WHEEL: mu_input_scroll(ctx, 0, event.wheel.y * -30); break;
@@ -233,26 +249,29 @@ int main(int argc, char **argv)
                     if (event.key.key == SDLK_W) {
                         shader.camera.position = add_vec3f(scale_vec3f(shader.camera.direction, cam_speed), shader.camera.position); 
                         shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
-
+                            shader.Perspective = perspective(norm_vec3f(subtract_vec3f(shader.camera.position,shader.camera.direction)));
                     }
                     if (event.key.key == SDLK_S) {
                         shader.camera.position = subtract_vec3f(shader.camera.position, scale_vec3f(shader.camera.direction, cam_speed));
                         shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
-                        
+                        shader.Perspective = perspective(norm_vec3f(subtract_vec3f(shader.camera.position,shader.camera.direction)));
                     }
                     if (event.key.key == SDLK_A) {
                         shader.camera.position = subtract_vec3f(shader.camera.position, scale_vec3f(normalize_vec3f(cross(shader.camera.direction, shader.camera.up)), cam_speed));
                         shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
+                        shader.Perspective = perspective(norm_vec3f(subtract_vec3f(shader.camera.position,shader.camera.direction)));
                     }
                     if (event.key.key == SDLK_D) {
                         shader.camera.position = add_vec3f(shader.camera.position, scale_vec3f(normalize_vec3f(cross(shader.camera.direction, shader.camera.up)), cam_speed));
                         shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
+                        shader.Perspective = perspective(norm_vec3f(subtract_vec3f(shader.camera.position,shader.camera.direction)));
                     }
 
-                    if (event.key.key == SDLK_R) {
+                    if (event.key.key == SDLK_R) { //resets to default rotations
                         shader.camera.position = (vector3f){0, 0, 4};
-                         shader.camera.direction = (vector3f){0,0,-1};
+                        shader.camera.direction = (vector3f){0,0,-1};
                         shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
+                        shader.Perspective = perspective(norm_vec3f(subtract_vec3f(shader.camera.position,shader.camera.direction)));
                     }
 
 
@@ -274,27 +293,27 @@ int main(int argc, char **argv)
         // Sets color buffer for screen
         color_buffer.pixels = (color4ub *)draw_surface->pixels;
 
-        mu_begin(ctx);
-        if (mu_begin_window(ctx, "Transformations", mu_rect(40, 40, 240, 300)))  {
-            mu_Container *win = mu_get_current_container(ctx);
-            win->rect.w = mu_max(win->rect.w, 240);
-            win->rect.h = mu_max(win->rect.h, 300);
+        // mu_begin(ctx);
+        // if (mu_begin_window(ctx, "Transformations", mu_rect(40, 40, 240, 300)))  {
+        //     mu_Container *win = mu_get_current_container(ctx);
+        //     win->rect.w = mu_max(win->rect.w, 240);
+        //     win->rect.h = mu_max(win->rect.h, 300);
 
-                /* window info */
-            if (mu_header(ctx, "Window Info")) {
-                mu_Container *win = mu_get_current_container(ctx);
-                char buf[64];
-                mu_layout_row(ctx, 2, (int[]) { 54, -1 }, 0);
-                mu_label(ctx,"Position:");
-                sprintf(buf, "%d, %d", win->rect.x, win->rect.y); 
-                mu_label(ctx, buf);
+        //         /* window info */
+        //     if (mu_header(ctx, "Window Info")) {
+        //         mu_Container *win = mu_get_current_container(ctx);
+        //         char buf[64];
+        //         mu_layout_row(ctx, 2, (int[]) { 54, -1 }, 0);
+        //         mu_label(ctx,"Position:");
+        //         sprintf(buf, "%d, %d", win->rect.x, win->rect.y); 
+        //         mu_label(ctx, buf);
              
-            }
+        //     }
 
 
-            mu_end_window(ctx);
-        }
-        mu_end(ctx);
+        //     mu_end_window(ctx);
+        // }
+        // mu_end(ctx);
 
 
         // Set background color
@@ -305,24 +324,26 @@ int main(int argc, char **argv)
         
 
         //***************************WORLD SCENE RENDERER***************************
-       // diablo.angle += radian(90.0f);
-        light_angle += radian(90.0f);        
-        shader.light.position = rotateY((vector4f){shader.light.position.x, shader.light.position.y, shader.light.position.z}, light_angle);
-        if(light_angle > radian(360))
-            light_angle = 0;
+        // diablo.angle += radian(90.0f);
+        // light_angle += radian(90.0f);        
+        teapot.angle += radian(90.0f);
+        // shader.light.position = rotateY((vector4f){shader.light.position.x, shader.light.position.y, shader.light.position.z}, light_angle);
+        // if(light_angle > radian(360))
+        //     light_angle = 0;
         floor.position = (vector3f){0.0f, 0.0f, 0.0f};
         floor.scale = 1.0f;
         render_faces(&shader, &floor, zbuffer, depth_buffer, &color_buffer, true);
 
-        diablo.position = (vector3f){0.0f, -1.0f, 0.0f};
+        diablo.position = (vector3f){1.5f, -1.0f, 0.0f};
         diablo.scale = 0.5f;
-        //render_faces(&shader, &diablo, zbuffer, depth_buffer, &color_buffer, true);
+        render_faces(&shader, &diablo, zbuffer, depth_buffer, &color_buffer, true);
 
         //Light position floor
-        cube.position = (vector3f){3.0f, -4.0f, 0.0f};
+        cube.position = (vector3f){0.0f, -4.0f, 0.0f};
         cube.scale = 0.2f;
         render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, true);
 
+        teapot.position = (vector3f){0.0f, -6.0f, 0.0f};
         teapot.scale = 0.1f;
         render_faces(&shader, &teapot, zbuffer, depth_buffer, &color_buffer, true);
         

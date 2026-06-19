@@ -10,11 +10,18 @@ void project(vector3f *v, int width, int height) {
                         };
 }
 
-matrix4f viewport(int x, int y, int w, int h) {
+matrix4f viewport(int x, int y, int w, int h, int f, int n) {
+    // X: the left corner of the viewport
+    // Y: the bottom corner of the viewport
+    // W: the width of the viewport
+    // H: the height of the viewport
+    // N: the near clipping value, 0 by default
+    // F: the far clipping value, 1 by default
+
     return (matrix4f){
         w/2., 0, 0, x+w/2., 
         0, h/2., 0, y+h/2., 
-        0, 0, 1, 0, 
+        0, 0, (f-n)/2, (f-n)/2, 
         0, 0, 0, 1};
 }
 

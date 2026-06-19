@@ -34,6 +34,10 @@ else()
 endif()
 
 
+find_package(OpenMP REQUIRED)
+
+
+
 add_executable(no_nonsense_engine WIN32 
    ./src/config.h
     ./src/main.c
@@ -63,6 +67,7 @@ target_compile_definitions(no_nonsense_engine PRIVATE CIMGUI_DEFINE_ENUMS_AND_ST
 target_link_libraries(no_nonsense_engine PRIVATE 
                                 m
                                 SDL3::SDL3
+                                OpenMP::OpenMP_C
                                 )
 
 target_compile_options(no_nonsense_engine  PRIVATE -fsanitize=address)

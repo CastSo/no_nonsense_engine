@@ -50,7 +50,7 @@ void render_tga(image_view *color_buffer, image_view *img_buffer) {
 void render_faces(Shader *shader, Model *model, float *zbuffer, float* depth_buffer, image_view* color_buffer, bool is_bf_cull) {
 
     //Reference vertices by induces
-    //#pragma omp parallel for
+    
     for (int v = 0; v < (model->triangles_size); v += 9) {
         
 
@@ -78,39 +78,11 @@ void render_faces(Shader *shader, Model *model, float *zbuffer, float* depth_buf
         }
 
         
-
+        
         triangle3D(shader, model, zbuffer, depth_buffer, color_buffer, is_bf_cull);
     }
     
 }
-
-void render_faces_color(Shader *shader, Model *model, float *zbuffer, float *depth_buffer, image_view* color_buffer,  bool is_bf_cull) {
-    //#pragma omp parallel for
-    for (int v = 0; v < (model->triangles_size); v += 9) {
-        
-
-        for (int f = 0; f < 3; f++) {
-            vector3f vec = model->vertices[model->triangles[v+(f*3)]];
-            vector4f local = (vector4f){vec.x, vec.y, vec.z, 1.};
-            
-            //Transformations in local space
-            local = rotateY(local, model->angle);
-            local = translate(local, model->position);
-            local = scale(local, model->scale);
-
-            vector4f position = multiply_mat4f_vec4f(shader->ModelView, local);
-            shader->clip[f] = multiply_mat4f_vec4f(shader->Perspective, position); // in clip coordinates
-            
-     
-        }
-
-        
-
-        triangle3D(shader, model, zbuffer, depth_buffer, color_buffer, is_bf_cull);
-    }
-}
-
-
 
 
 void render_wireframe(Model* model, image_view* color_buffer) {
@@ -317,19 +289,22 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer, float* depth_buff
     e20.step_y_size = step_y_size;
 
     //Sub triangles
-    vector4f w0_row = edge_init(&e12, (vector2f){v[1].x, v[1].y}, (vector2f){v[2].x, v[2].y}, p);
-    vector4f w1_row = edge_init(&e20, (vector2f){v[2].x, v[2].y}, (vector2f){v[0].x, v[0].y}, p);
-    vector4f w2_row = edge_init(&e01, (vector2f){v[0].x, v[0].y}, (vector2f){v[1].x, v[1].y}, p);
+    vector4f w0_row = edge_init(&e12, (vector2f){v[1].x, v[1].y}, (vector2f){v[2].x, v[2].y}, (vector2f){bbminx, bbminy});
+    vector4f w1_row = edge_init(&e20, (vector2f){v[2].x, v[2].y}, (vector2f){v[0].x, v[0].y}, (vector2f){bbminx, bbminy});
+    vector4f w2_row = edge_init(&e01, (vector2f){v[0].x, v[0].y}, (vector2f){v[1].x, v[1].y}, (vector2f){bbminx, bbminy});
     double twice_total_area = twice_triangle_area((vector2f){v[0].x, v[0].y},(vector2f){v[1].x, v[1].y}, (vector2f){v[2].x, v[2].y});
-    
+    int ystart = fmax(bbminy, 0);
+    int xstart = fmax(bbminx, 0);
+    int yend = fmin(bbmaxy, color_buffer->height-1);
+    int xend = fmin(bbmaxx, color_buffer->width-1);
 
-    //#pragma omp parallel for
-    for (p.y = fmax(bbminy, 0); p.y <=  fmin(bbmaxy, color_buffer->height-1); p.y += step_y_size){
+     //#pragma omp parallel for
+    for (p.y = ystart; p.y <= yend; p.y += step_y_size){
         vector4f w0 = w0_row;
         vector4f w1 = w1_row;
         vector4f w2 = w2_row;
 
-        for (p.x = fmax(bbminx, 0); p.x <=  fmin(bbmaxx, color_buffer->width-1); p.x += step_x_size){
+        for (p.x = xstart; p.x <=  xend; p.x += step_x_size){
             //Checks if negative barycentric coordinates
             //Groups by 2 pixels wide and 2 pixel high. Creates Mortan curve.
             bool mask[4] = {(w0.x >= 0 && w1.x >= 0 && w2.x >= 0), 
@@ -434,8 +409,10 @@ void triangle2D(image_view* color_buffer, vector3f v[3], color4ub color, bool is
     int w1_row = twice_triangle_area((vector2f){v[2].x, v[2].y}, (vector2f){v[0].x, v[0].y}, p);
     int w2_row = twice_triangle_area((vector2f){v[0].x, v[0].y}, (vector2f){v[1].x, v[1].y}, p);
 
-   #pragma omp parallel for
+
     for (int x = fmax(bbminx, 0); x <= fmin(bbmaxx, color_buffer->width-1); x++) {
+        printf("from thread = %d\n",
+             omp_get_thread_num());
         int w0 = w0_row;
         int w1 = w1_row;
         int w2 = w2_row;
@@ -491,7 +468,7 @@ void triangle2D_texture(image_view* color_buffer, vector3f clip[3], vector3f tex
 
     //Barycentric coordinates at min x and min y corner
 
-    #pragma omp parallel for
+
     
     for (int y = fmax(bbminy,0); y <= fmin(bbmaxy, color_buffer->height-1); y++){
 
@@ -653,5 +630,5 @@ void render_pixel_color(Shader* shader, Model* model, float *zbuffer, float* dep
     //printf("%f, %f \n", closest_depth, proj_coords.z);
     
     
-    *color_buffer->at(color_buffer, fmin(fmax(x, 0), color_buffer->width), fmin(fmax(y, 0), color_buffer->height)) = (color4ub) {fragment.x, fragment.y, fragment.z,  fragment.w};
+    *color_buffer->at(color_buffer, fmin(fmax(x, 0), color_buffer->width-1), fmin(fmax(y, 0), color_buffer->height-1)) = (color4ub) {fragment.x, fragment.y, fragment.z,  fragment.w};
 }
