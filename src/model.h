@@ -13,6 +13,7 @@ typedef struct Model {
     int* triangles;
     //Texture images
     bool is_textured;
+    bool is_phong;
     struct color4ub* uv;
     struct color4ub* diffuse;
     struct color4ub* specular;

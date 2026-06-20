@@ -60,18 +60,18 @@ int main(int argc, char **argv)
     Shader shader;
     
 
-    shader.camera.position = (vector3f){0, 1, 1.5};
+    shader.camera.position = (vector3f){-0.5, 0.8, 2.0};
     shader.camera.direction = (vector3f){0, 0, -1};
     shader.camera.up = (vector3f){0, 1, 0};
     shader.light.direction = (vector4f){0, 0, 1, 0};
-    shader.light.position = (vector4f){2, 1, -1, 0};
+    shader.light.position = (vector4f){1.0f, -0.6f, 1.0f, 0};
     float light_angle = (float)radian(45.0f);
     shader.light.position = rotateY((vector4f){shader.light.position.x, shader.light.position.y, shader.light.position.z}, light_angle);
     
 
     vector3f front;
     float yaw   = -90.0f;	
-    float pitch =  -45.0f;
+    float pitch =  -30.0f;
     float last_x =  800.0f / 2.0;
     float last_y =  600.0 / 2.0;
 
@@ -111,17 +111,25 @@ int main(int argc, char **argv)
     color_buffer.height = SCR_HEIGHT;
 
     Model floor = load_obj("./src/models/plane/floor.obj");
+    floor.is_phong = true;
     floor.is_textured = true;
-    floor.uv = load_tga("./src/models/plane/floor_nm_tangent.tga", &floor.header_uv);
-    floor.diffuse = load_tga("./src/models/plane/floor_diffuse.tga", &floor.header_diffuse);
-    floor.specular = load_tga("./src/models/plane/floor_spec.tga", &floor.header_specular);
+    floor.uv = load_tga("./src/models/brickwall/brickwall_normal.tga", &floor.header_uv);
+    floor.diffuse = load_tga("./src/models/brickwall/brickwall_diffuse.tga", &floor.header_diffuse);
+    //floor.color = (vector4f){120.0f, 120.0f, 120.0f, 1.0f};
+
+    Model light_cube = load_obj("./src/models/primitives/cube.obj");
+    light_cube.is_phong = false;
+    light_cube.is_textured = false;
+    light_cube.color = (vector4f){255.0f, 255.0f, 255.0f, 1.0f};
 
     Model cube = load_obj("./src/models/primitives/cube.obj");
+    cube.is_phong = true;
     cube.is_textured = true;
     cube.uv = load_tga("./src/models/brickwall/brickwall_normal.tga", &cube.header_uv);
     cube.diffuse = load_tga("./src/models/brickwall/brickwall_diffuse.tga", &cube.header_diffuse);
     
     Model diablo  = load_obj("./src/models/diablo/diablo3_pose.obj");
+    diablo.is_phong = true;
     diablo.is_textured = true;
     diablo.color = (vector4f){255.0f, 0.0f, 0.0f, 1.0f};
     diablo.uv = load_tga("./src/models/diablo/diablo3_pose_nm_tangent.tga", &diablo.header_uv);
@@ -129,6 +137,7 @@ int main(int argc, char **argv)
     diablo.specular = load_tga("./src/models/diablo/diablo3_pose_spec.tga", &diablo.header_specular);
 
     Model teapot = load_obj("./src/models/utah_teapot.obj");
+    teapot.is_phong = true;
     teapot.is_textured = false;
     teapot.color = (vector4f){99.0f, 101.0f, 164.0f, 1.0f};
 
@@ -152,7 +161,7 @@ int main(int argc, char **argv)
             flength = ticks - tick_last;
         }
         fps = 1000.0f / flength;
-        
+        printf("fps: %f\n", fps);
         SDL_Event event;
 
         cam_speed = 0.8f;
@@ -249,7 +258,7 @@ int main(int argc, char **argv)
                     if (event.key.key == SDLK_W) {
                         shader.camera.position = add_vec3f(scale_vec3f(shader.camera.direction, cam_speed), shader.camera.position); 
                         shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
-                            shader.Perspective = perspective(norm_vec3f(subtract_vec3f(shader.camera.position,shader.camera.direction)));
+                        shader.Perspective = perspective(norm_vec3f(subtract_vec3f(shader.camera.position,shader.camera.direction)));
                     }
                     if (event.key.key == SDLK_S) {
                         shader.camera.position = subtract_vec3f(shader.camera.position, scale_vec3f(shader.camera.direction, cam_speed));
@@ -268,8 +277,8 @@ int main(int argc, char **argv)
                     }
 
                     if (event.key.key == SDLK_R) { //resets to default rotations
-                        shader.camera.position = (vector3f){0, 0, 4};
-                        shader.camera.direction = (vector3f){0,0,-1};
+                        shader.camera.position = (vector3f){-0.5, 0.8, 2.0};
+                        shader.camera.direction = (vector3f){0, 0, -1};
                         shader.ModelView = lookat(shader.camera.position, add_vec3f(shader.camera.direction, shader.camera.position), shader.camera.up);
                         shader.Perspective = perspective(norm_vec3f(subtract_vec3f(shader.camera.position,shader.camera.direction)));
                     }
@@ -325,27 +334,34 @@ int main(int argc, char **argv)
 
         //***************************WORLD SCENE RENDERER***************************
         // diablo.angle += radian(90.0f);
-        // light_angle += radian(90.0f);        
-        teapot.angle += radian(90.0f);
-        // shader.light.position = rotateY((vector4f){shader.light.position.x, shader.light.position.y, shader.light.position.z}, light_angle);
-        // if(light_angle > radian(360))
-        //     light_angle = 0;
+        light_angle += radian(90.0f);        
+        // teapot.angle += radian(45.0f);
+        shader.light.position = rotateY((vector4f){shader.light.position.x, shader.light.position.y, shader.light.position.z}, light_angle);
+        if(light_angle > radian(360))
+            light_angle = 0;
+        // if(teapot.angle > radian(360))
+        //     teapot.angle = 0;
         floor.position = (vector3f){0.0f, 0.0f, 0.0f};
         floor.scale = 1.0f;
         render_faces(&shader, &floor, zbuffer, depth_buffer, &color_buffer, true);
 
-        diablo.position = (vector3f){1.5f, -1.0f, 0.0f};
+        light_cube.position = (vector3f){shader.light.position.x, shader.light.position.y, shader.light.position.z};
+        light_cube.scale = .1f;
+        render_faces(&shader, &light_cube, zbuffer, depth_buffer, &color_buffer, true);
+
+        diablo.position = (vector3f){0.5f, -0.5f, 0.5f};
         diablo.scale = 0.5f;
         render_faces(&shader, &diablo, zbuffer, depth_buffer, &color_buffer, true);
 
         //Light position floor
-        cube.position = (vector3f){0.0f, -4.0f, 0.0f};
+        cube.position = (vector3f){0.0f, -0.7f, 0.5f};
         cube.scale = 0.2f;
         render_faces(&shader, &cube, zbuffer, depth_buffer, &color_buffer, true);
 
-        teapot.position = (vector3f){0.0f, -6.0f, 0.0f};
+        teapot.position = (vector3f){0.0f, -0.5f, 0.5f};
         teapot.scale = 0.1f;
         render_faces(&shader, &teapot, zbuffer, depth_buffer, &color_buffer, true);
+        
         
         for (int z = 0; z < buf_size; z++)
         {
@@ -451,6 +467,13 @@ int main(int argc, char **argv)
     free(teapot.normals);
     free(teapot.textures);
     free(teapot.diffuse);
+
+    free(light_cube.vertices);
+    free(light_cube.triangles);
+    free(light_cube.normals);
+    free(light_cube.textures);
+    free(light_cube.diffuse);
+
 
     SDL_DestroySurface(draw_surface);
     // SDL_DestroyEvent(event);

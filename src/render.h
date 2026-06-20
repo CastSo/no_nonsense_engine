@@ -31,9 +31,9 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer,  float* depth_buf
 
 void render_pixel_texture(Shader* shader, Model* model, float *zbuffer, float* depth_buffer, image_view* color_buffer, float x, float y, vector3f barycoord);
 void render_pixel_color(Shader* shader, Model* model, float *zbuffer, float* depth_buffer, image_view* color_buffer, float x, float y, vector3f barycoord);
+void render_pixel_basic(Shader* shader, Model* model, float *zbuffer, float* depth_buffer, image_view* color_buffer, float x, float y, vector3f barycoord);
 
 void render_faces(Shader *shader, Model *model, float *zbuffer, float* depth_buffer, image_view* color_buffer,  bool is_bf_cull);
-void render_faces_color(Shader *shader, Model *model, float *zbuffer, float *depth_buffer, image_view* color_buffer,  bool is_bf_cull);
 void render_wireframe(Model* model, image_view* color_buffer);
 
 void render_gui_texture(image_view* color_buffer, mu_Rect dst, mu_Rect src, mu_Color color);

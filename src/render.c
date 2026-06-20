@@ -1,6 +1,6 @@
 #include "render.h"
 #include <omp.h>
-
+#include <sched.h> 
 
 vector4f edge_init(Edge* self, vector2f v0, vector2f v1, vector2f origin) {
     //Edge
@@ -59,9 +59,10 @@ void render_faces(Shader *shader, Model *model, float *zbuffer, float* depth_buf
             vector4f local = (vector4f){vec.x, vec.y, vec.z, 1.};
             
             //Transformations in local space
+            local = scale(local, model->scale);
             local = rotateY(local, model->angle);
             local = translate(local, model->position);
-            local = scale(local, model->scale);
+
 
             vector4f position = multiply_mat4f_vec4f(shader->ModelView, local);
             shader->eye[f] = position;
@@ -298,31 +299,49 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer, float* depth_buff
     int yend = fmin(bbmaxy, color_buffer->height-1);
     int xend = fmin(bbmaxx, color_buffer->width-1);
 
-     //#pragma omp parallel for
-    for (p.y = ystart; p.y <= yend; p.y += step_y_size){
-        vector4f w0 = w0_row;
-        vector4f w1 = w1_row;
-        vector4f w2 = w2_row;
+    vector4f w0, w1, w2;
+    float xpos, ypos;
+    int xsum = xstart, ysum = ystart;
+    
 
-        for (p.x = xstart; p.x <=  xend; p.x += step_x_size){
+    
+  // #pragma omp parallel for simd num_threads(2) 
+   //printf("re_yend:%d, ", re_yend);
+   for (int py = ystart; py <= yend; py += step_y_size){
+        w0 = w0_row;
+        w1 = w1_row;
+        w2 = w2_row;
+
+        for (int px = xstart; px <=  xend; px += step_x_size){
             //Checks if negative barycentric coordinates
             //Groups by 2 pixels wide and 2 pixel high. Creates Mortan curve.
             bool mask[4] = {(w0.x >= 0 && w1.x >= 0 && w2.x >= 0), 
                             (w0.y >= 0 && w1.y >= 0 && w2.y >= 0), 
                             (w0.z >= 0 && w1.z >= 0 && w2.z >= 0), 
                             (w0.w >= 0 && w1.w >= 0 && w2.w >= 0)}; 
-            bool any_mask = mask[0] || mask[1] || mask[2]  || mask[3];
-
+            //bool any_mask = mask[0] || mask[1] || mask[2]  || mask[3];
+            //bool mask[4];
+            bool any_mask;
             vector3f all_bc[4] = {(vector3f){w0.x, w1.x, w2.x}, 
                                   (vector3f){w0.y, w1.y, w2.y},  
                                   (vector3f){w0.z, w1.z, w2.z}, 
                                   (vector3f){w0.w, w1.w, w2.w}}; 
+                                  
+            #pragma omp simd reduction(||:any_mask)
+            for (int m = 0; m < 4; m++) {
+                int tid = omp_get_thread_num();
+                int total_threads = omp_get_num_threads();
+                
+                //printf("Thread %d of %d is running\n", tid, total_threads);
+                any_mask = any_mask || mask[m];
+            }
 
             if(any_mask){
                 //Cycles through 2x2
+                //#pragma omp parallel for 
                 for(int i = 0; i <= 1; i++){
-                    int normal_y = color_buffer->height-(p.y+i)-1;  
-                    float x = fmin(p.x+i, color_buffer->width-1);
+                    int normal_y = color_buffer->height-(py+i)-1;  
+                    float x = fmin(px+i, color_buffer->width-1);
                     float y = fmin(normal_y, color_buffer->height-1);
 
                     if(!mask[i])
@@ -337,33 +356,45 @@ void triangle3D(Shader *shader,  Model *model, float *zbuffer, float* depth_buff
                     }
 
                     zbuffer[(int)(x+y*color_buffer->width)] = z;  
-                    if(model->is_textured)
-                        render_pixel_texture(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);
-                    else
-                        render_pixel_color(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);
+                    if(model->is_phong)//idk refactor later, Checks fragment shader
+                    {        
+                        if(model->is_textured)
+                            render_pixel_texture(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);
+                        else
+                            render_pixel_color(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);
+                    }else {
+                        render_pixel_basic(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);
+                    }    
                 }
 
-                for(int i = 0; i <= 1; i++){
-                    int normal_y = color_buffer->height-(p.y+i)-1;  
-                    float x = fmin(p.x+1-i, color_buffer->width-1);
-                    float y = fmin(normal_y, color_buffer->height-1);
+                for(int j = 0; j <= 1; j++){
+                    int normal_y = color_buffer->height-(py+j)-1;  
+                    float xpos = fmin(px+1-j, color_buffer->width-1);
+                    float ypos = fmin(normal_y, color_buffer->height-1);
 
-                    if(!mask[i+2])
+                    if(!mask[j+2])
                         continue;
-                    vector3f bc = scale_vec3f((vector3f){all_bc[i+2].x, all_bc[i+2].y, all_bc[i+2].z}, 1/twice_total_area);
+                    vector3f bc = scale_vec3f((vector3f){all_bc[j+2].x, all_bc[j+2].y, all_bc[j+2].z}, 1/twice_total_area);
                     
                     float z = dot_vec3f(bc, (vector3f){shader->clip[0].z, shader->clip[1].z, shader->clip[2].z});
                     //Discard pixel p because inferior to z;
-                    if (z <= zbuffer[(int)(x+y*color_buffer->width)])
+                    if (z <= zbuffer[(int)(xpos+ypos*color_buffer->width)])
                     {    
                         continue;
                     }
 
-                    zbuffer[(int)(x+y*color_buffer->width)] = z;  
-                    if(model->is_textured)
-                        render_pixel_texture(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);
-                    else
-                        render_pixel_color(shader, model, zbuffer, depth_buffer, color_buffer, x, y, bc);    
+                    zbuffer[(int)(xpos+ypos*color_buffer->width)] = z;  
+                    
+                    if(model->is_phong)
+                    {        
+                        if(model->is_textured)
+                            render_pixel_texture(shader, model, zbuffer, depth_buffer, color_buffer, xpos, ypos, bc);
+                        else
+                            render_pixel_color(shader, model, zbuffer, depth_buffer, color_buffer, xpos, ypos, bc);
+                    }else {
+                        render_pixel_basic(shader, model, zbuffer, depth_buffer, color_buffer, xpos, ypos, bc);
+                    }    
+                
                 }
                 
             }
@@ -411,8 +442,8 @@ void triangle2D(image_view* color_buffer, vector3f v[3], color4ub color, bool is
 
 
     for (int x = fmax(bbminx, 0); x <= fmin(bbmaxx, color_buffer->width-1); x++) {
-        printf("from thread = %d\n",
-             omp_get_thread_num());
+        // printf("from thread = %d\n",
+        //      omp_get_thread_num());
         int w0 = w0_row;
         int w1 = w1_row;
         int w2 = w2_row;
@@ -541,9 +572,9 @@ void render_pixel_texture(Shader* shader, Model* model, float* zbuffer, float* d
         if(model->specular != NULL)
             spec_color = sample2D(model->header_specular, model->specular, (vector2f){uv.x, uv.y});
         else
-            spec_color = (color4ub) {1.0f, 1.0f, 1.0f, 1.0f};
+            spec_color = (color4ub) {255.0f, 255.0f, 255.0f, 1.0f};
         color4ub diff_color = sample2D(model->header_diffuse, model->diffuse, (vector2f){uv.x, uv.y}); //Pixel color
-        float specular = (.5+2.*spec_color.r/255.) * pow(fmax(0, dot_vec4f(vec_r, vec_v)), e);
+        float specular = (.5+2.*spec_color.r/255.) * pow(fmax(0.0f, dot_vec4f(vec_r, vec_v)), e);
 
 
         matrix4f light_transform = shader->Perspective;
@@ -632,3 +663,21 @@ void render_pixel_color(Shader* shader, Model* model, float *zbuffer, float* dep
     
     *color_buffer->at(color_buffer, fmin(fmax(x, 0), color_buffer->width-1), fmin(fmax(y, 0), color_buffer->height-1)) = (color4ub) {fragment.x, fragment.y, fragment.z,  fragment.w};
 }
+
+void render_pixel_basic(Shader* shader, Model* model, float *zbuffer, float* depth_buffer, image_view* color_buffer, float x, float y, vector3f barycoord) {
+    
+    int e = 32;
+   
+    vector3f AB = subtract_vec3f((vector3f){shader->eye[0].x, shader->eye[0].y, shader->eye[0].z}, (vector3f){shader->eye[1].x, shader->eye[1].y, shader->eye[1].z});
+    vector3f AC = subtract_vec3f((vector3f){shader->eye[0].x, shader->eye[0].y, shader->eye[0].z}, (vector3f){shader->eye[2].x, shader->eye[2].y, shader->eye[2].z});
+   
+    vector3f vec_n = normalize_vec3f(cross(AB, AC)); // orthogonal to triangle
+    vector3f vec_l = normalize_vec3f((vector3f){shader->light.position.x, shader->light.position.y, shader->light.position.z}); // direction toward sun
+    vector3f vec_r = subtract_vec3f(scale_vec3f(scale_vec3f(vec_n,2), dot_vec3f(vec_n, vec_l)), vec_l); //reflection of sun
+    vector3f vec_v = normalize_vec3f(shader->camera.position); //fragment to sun
+    
+        
+    
+    *color_buffer->at(color_buffer, fmin(fmax(x, 0), color_buffer->width-1), fmin(fmax(y, 0), color_buffer->height-1)) = (color4ub) {model->color.x, model->color.y, model->color.z,  model->color.w};
+}
+
