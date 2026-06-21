@@ -34,7 +34,7 @@ matrix4f transpose_mat4f(matrix4f m);
 
 float determinant(matrix3f m);
 matrix3f inverse_mat3f(matrix3f m);
-matrix4f inverse_mat4f(matrix4f m);
+matrix4f transpose_inverse_mat4f(matrix4f m);
 matrix2f inverse_mat2f(matrix2f m);
 vector3f cross(vector3f a, vector3f b);
 

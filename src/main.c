@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     shader.camera.direction = (vector3f){0, 0, -1};
     shader.camera.up = (vector3f){0, 1, 0};
     shader.light.direction = (vector4f){0, 0, 1, 0};
-    shader.light.position = (vector4f){1.0f, -0.6f, 1.0f, 0};
+    shader.light.position = (vector4f){1.0f, 0.0f, 1.0f, 0};
     float light_angle = (float)radian(45.0f);
     shader.light.position = rotateY((vector4f){shader.light.position.x, shader.light.position.y, shader.light.position.z}, light_angle);
     
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
     Model diablo  = load_obj("./src/models/diablo/diablo3_pose.obj");
     diablo.is_phong = true;
     diablo.is_textured = true;
-    diablo.color = (vector4f){255.0f, 0.0f, 0.0f, 1.0f};
+    //diablo.color = (vector4f){255.0f, 0.0f, 0.0f, 1.0f};
     diablo.uv = load_tga("./src/models/diablo/diablo3_pose_nm_tangent.tga", &diablo.header_uv);
     diablo.diffuse = load_tga("./src/models/diablo/diablo3_pose_diffuse.tga", &diablo.header_diffuse);
     diablo.specular = load_tga("./src/models/diablo/diablo3_pose_spec.tga", &diablo.header_specular);
@@ -349,9 +349,9 @@ int main(int argc, char **argv)
         light_cube.scale = .1f;
         render_faces(&shader, &light_cube, zbuffer, depth_buffer, &color_buffer, true);
 
-        diablo.position = (vector3f){0.5f, -0.5f, 0.5f};
-        diablo.scale = 0.5f;
-        render_faces(&shader, &diablo, zbuffer, depth_buffer, &color_buffer, true);
+        // diablo.position = (vector3f){0.5f, -0.5f, 0.5f};
+        // diablo.scale = 0.5f;
+        // render_faces(&shader, &diablo, zbuffer, depth_buffer, &color_buffer, true);
 
         //Light position floor
         cube.position = (vector3f){0.0f, -0.7f, 0.5f};

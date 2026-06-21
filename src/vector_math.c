@@ -154,7 +154,7 @@ matrix3f inverse_mat3f(matrix3f m){
     };
 }
 
-matrix4f inverse_mat4f(matrix4f m){
+matrix4f transpose_inverse_mat4f(matrix4f m){
     //transpose and inverse
     matrix3f mat3 = {
         m.n00, m.n10, m.n20,

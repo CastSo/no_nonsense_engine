@@ -70,11 +70,15 @@ void render_faces(Shader *shader, Model *model, float *zbuffer, float* depth_buf
 
             
             //Uses vt from model
-            if(model->is_textured == true)
+            //f: vertex_index/texture_index/normal_index
+            if(model->is_textured)
             {
                 shader->varying_uv[f] = model->textures[model->triangles[v+(f*3+1)]];
                 vector3f n = model->textures[model->triangles[v+(f*3+2)]];
-                shader->norm[f] = multiply_mat4f_vec4f(inverse_mat4f(shader->ModelView), (vector4f){n.x, n.y, n.z, 0});
+                shader->norm[f] = multiply_mat4f_vec4f((transpose_inverse_mat4f(shader->ModelView)), (vector4f){n.x, n.y, n.z, 0.0f});
+            } else {
+                vector3f n = model->normals[model->triangles[v+(f*3+2)]];
+                shader->norm[f] = normalize_vec4f(multiply_mat4f_vec4f((transpose_inverse_mat4f(shader->ModelView)),(vector4f){n.x, n.y, n.z, 0.0f}));
             }
         }
 
@@ -600,7 +604,7 @@ void render_pixel_texture(Shader* shader, Model* model, float* zbuffer, float* d
         }
         depth_buffer[frag_i] = current_depth;
         //Using 0.6 to fix missing color channels
-        float phong = ambient + (1.0f-shadow) * (diffuse + specular);
+        float phong = ambient + (diffuse + specular);
 
         vector4f fragment = scale_vec4f((vector4f){diff_color.r, diff_color.g, diff_color.b, diff_color.a}, phong);
         //printf("%f, %f \n", closest_depth, proj_coords.z);
@@ -613,11 +617,16 @@ void render_pixel_texture(Shader* shader, Model* model, float* zbuffer, float* d
 void render_pixel_color(Shader* shader, Model* model, float *zbuffer, float* depth_buffer, image_view* color_buffer, float x, float y, vector3f barycoord) {
     
     int e = 32;
-   
-    vector3f AB = subtract_vec3f((vector3f){shader->eye[0].x, shader->eye[0].y, shader->eye[0].z}, (vector3f){shader->eye[1].x, shader->eye[1].y, shader->eye[1].z});
-    vector3f AC = subtract_vec3f((vector3f){shader->eye[0].x, shader->eye[0].y, shader->eye[0].z}, (vector3f){shader->eye[2].x, shader->eye[2].y, shader->eye[2].z});
-   
-    vector3f vec_n = normalize_vec3f(cross(AB, AC)); // orthogonal to triangle
+    
+    //Method 1 for face normal: calculates normals based on the edges
+    // vector3f AB = subtract_vec3f((vector3f){shader->eye[0].x, shader->eye[0].y, shader->eye[0].z}, (vector3f){shader->eye[1].x, shader->eye[1].y, shader->eye[1].z});
+    // vector3f AC = subtract_vec3f((vector3f){shader->eye[0].x, shader->eye[0].y, shader->eye[0].z}, (vector3f){shader->eye[2].x, shader->eye[2].y, shader->eye[2].z});
+    //vector3f vec_n = normalize_vec3f(cross(AB, AC)); // orthogonal to triangle
+    
+    //Method 2 for face normal: calculate normals from vn
+    vector4f vec_n_sum = normalize_vec4f(add_vec4f(add_vec4f(scale_vec4f(shader->norm[0], barycoord.x), scale_vec4f(shader->norm[1],barycoord.y)), scale_vec4f(shader->norm[2],barycoord.z)));
+    vector3f vec_n = ((vector3f){vec_n_sum.x, vec_n_sum.y, vec_n_sum.z}); //face normal
+    
     vector3f vec_l = normalize_vec3f((vector3f){shader->light.position.x, shader->light.position.y, shader->light.position.z}); // direction toward sun
     vector3f vec_r = subtract_vec3f(scale_vec3f(scale_vec3f(vec_n,2), dot_vec3f(vec_n, vec_l)), vec_l); //reflection of sun
     vector3f vec_v = normalize_vec3f(shader->camera.position); //fragment to sun
@@ -647,7 +656,7 @@ void render_pixel_color(Shader* shader, Model* model, float *zbuffer, float* dep
     float closest_depth = depth_buffer[frag_i];
     //printf("%f, ", vec_v);
     
-    float bias = 0.0f; //Avoid shadow acne
+    float bias = 0.001f; //Avoid shadow acne
     float shadow = 0.0f;
     if(closest_depth - bias < current_depth){    
         shadow = 0.4f;
@@ -664,18 +673,8 @@ void render_pixel_color(Shader* shader, Model* model, float *zbuffer, float* dep
     *color_buffer->at(color_buffer, fmin(fmax(x, 0), color_buffer->width-1), fmin(fmax(y, 0), color_buffer->height-1)) = (color4ub) {fragment.x, fragment.y, fragment.z,  fragment.w};
 }
 
+//no phong lighting
 void render_pixel_basic(Shader* shader, Model* model, float *zbuffer, float* depth_buffer, image_view* color_buffer, float x, float y, vector3f barycoord) {
-    
-    int e = 32;
-   
-    vector3f AB = subtract_vec3f((vector3f){shader->eye[0].x, shader->eye[0].y, shader->eye[0].z}, (vector3f){shader->eye[1].x, shader->eye[1].y, shader->eye[1].z});
-    vector3f AC = subtract_vec3f((vector3f){shader->eye[0].x, shader->eye[0].y, shader->eye[0].z}, (vector3f){shader->eye[2].x, shader->eye[2].y, shader->eye[2].z});
-   
-    vector3f vec_n = normalize_vec3f(cross(AB, AC)); // orthogonal to triangle
-    vector3f vec_l = normalize_vec3f((vector3f){shader->light.position.x, shader->light.position.y, shader->light.position.z}); // direction toward sun
-    vector3f vec_r = subtract_vec3f(scale_vec3f(scale_vec3f(vec_n,2), dot_vec3f(vec_n, vec_l)), vec_l); //reflection of sun
-    vector3f vec_v = normalize_vec3f(shader->camera.position); //fragment to sun
-    
         
     
     *color_buffer->at(color_buffer, fmin(fmax(x, 0), color_buffer->width-1), fmin(fmax(y, 0), color_buffer->height-1)) = (color4ub) {model->color.x, model->color.y, model->color.z,  model->color.w};
